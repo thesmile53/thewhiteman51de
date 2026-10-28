@@ -66,3 +66,6 @@ Das Overlay selbst kann die echte Webcam nicht ausblenden – sie ist eine OBS-Q
 3. Szenen per Klick wechseln; Quellen der aktuellen Szene (Webcam, Mikrofon-Anzeige, …) per Haken ein-/ausschalten.
 
 Die Zugangsdaten stehen in `obs-config.json` (nur lokal, nicht im Repo) und werden nie an Browser gesendet. Läuft der Server nicht auf dem OBS-Rechner, Host entsprechend ändern.
+
+## Eigener Twitch-Chat (ohne Zustimmungs-Banner)
+Der eingebettete Twitch-Chat („Twitch-Embed“) verlangt eine Zustimmung zu Twitchs Regeln/Cookies. Besser: im Panel unter **Chat einblenden** den Kanalnamen eintragen und **Eigener Chat (empfohlen)** klicken. Das Overlay liest den öffentlichen Chat dann anonym (read-only, ohne Login) über Twitchs offizielle IRC-Schnittstelle mit und zeigt ihn im eigenen Design inkl. Emotes. Schreiben ist darüber nicht möglich.

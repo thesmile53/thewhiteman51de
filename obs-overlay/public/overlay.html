@@ -9,10 +9,43 @@
 <div id="custom"></div>
 <script>
 let items=[],i=0;
-let chatSrc="";
-Overlay.on("state",st=>{
+let chatKey="",irc=null,ircTimer=null;
+const IRC_URL=new URLSearchParams(location.search).get("irc")||"wss://irc-ws.chat.twitch.tv:443";
+function setChat(st){
  const cu=(st.chatUrl||"").replace(/\{host\}/g,location.hostname);
- if(cu!==chatSrc){chatSrc=cu;ch.classList.toggle("embed",!!cu);ch.innerHTML=cu?'<iframe src="'+cu.replace(/"/g,"&quot;")+'"></iframe>':'<h4></h4>Chat-URL im Kontrollpanel eintragen.'}
+ const key=st.twitchChannel?"irc:"+st.twitchChannel:cu?"url:"+cu:"none";
+ if(key===chatKey)return;chatKey=key;stopIrc();
+ ch.classList.toggle("embed",key.startsWith("url:"));
+ if(key.startsWith("irc:")){ch.innerHTML='<h4></h4><div class="msgs" id="msgs"></div>';startIrc(st.twitchChannel)}
+ else if(cu)ch.innerHTML='<iframe src="'+cu.replace(/"/g,"&quot;")+'"></iframe>';
+ else ch.innerHTML='<h4></h4>Chat im Kontrollpanel einrichten.';
+}
+function stopIrc(){clearTimeout(ircTimer);if(irc){irc.onclose=null;irc.close();irc=null}}
+function startIrc(chn){
+ const ws=irc=new WebSocket(IRC_URL);
+ ws.onopen=()=>{ws.send("CAP REQ :twitch.tv/tags");ws.send("PASS SCHMOOPIIE");ws.send("NICK justinfan"+(10000+Math.random()*80000|0));ws.send("JOIN #"+chn)};
+ ws.onmessage=e=>String(e.data).split("\r\n").forEach(l=>ircLine(ws,l));
+ ws.onclose=()=>{ircTimer=setTimeout(()=>startIrc(chn),5000)};
+}
+function ircLine(ws,l){
+ if(l.startsWith("PING"))return ws.send("PONG :tmi.twitch.tv");
+ const m=l.match(/^(?:@(\S+) )?:([^!]+)![^ ]+ PRIVMSG #\S+ :(.*)$/);if(!m)return;
+ const tags={};(m[1]||"").split(";").forEach(t=>{const i=t.indexOf("=");tags[t.slice(0,i)]=t.slice(i+1)});
+ let text=m[3];if(text.startsWith("\x01ACTION ")){text=text.slice(8).replace(/\x01$/,"")}
+ const chars=Array.from(text),rep=[];
+ (tags.emotes||"").split("/").filter(Boolean).forEach(e=>{const[id,pos]=e.split(":");pos.split(",").forEach(r=>{const[a,b]=r.split("-").map(Number);rep.push({a,b,id})})});
+ rep.sort((x,y)=>x.a-y.a);
+ let html="",i=0;
+ for(const r of rep){html+=esc(chars.slice(i,r.a).join(""))+'<img class="emo" src="https://static-cdn.jtvnw.net/emoticons/v2/'+encodeURIComponent(r.id)+'/default/dark/2.0">';i=r.b+1}
+ html+=esc(chars.slice(i).join(""));
+ const color=/^#[0-9a-f]{6}$/i.test(tags.color||"")?tags.color:"#a855f7";
+ const box=document.getElementById("msgs");if(!box)return;
+ const d=document.createElement("div");d.className="msg";
+ d.innerHTML='<b style="color:'+color+'">'+esc(tags["display-name"]||m[2])+'</b> '+html;
+ box.appendChild(d);while(box.children.length>40)box.firstChild.remove();
+}
+Overlay.on("state",st=>{
+ setChat(st);
  Overlay.renderItems(custom,st.items);
  Overlay.applyLayout(st.layout,{cam,live:lv,lower:lt,chat:ch,goal:go,bottom:bt});
  n.textContent=st.name;tp.textContent=st.topic;

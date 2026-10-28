@@ -23,6 +23,7 @@ const DEFAULT_LAYOUT = {
 };
 
 const DEFAULT_STATE = {
+  twitchChannel: "", // eigener Twitch-Chat (anonym per IRC, ohne Twitch-Banner)
   camVisible: true,
   liveVisible: true,
   liveText: "LIVE",
@@ -74,7 +75,10 @@ function merge(target, patch) {
   for (const k of Object.keys(DEFAULT_STATE)) {
     if (!(k in patch)) continue;
     const def = DEFAULT_STATE[k], v = patch[k];
-    if (k === "chatUrl") {
+    if (k === "twitchChannel") {
+      const c = String(v).trim().replace(/^#/, "").toLowerCase();
+      target.twitchChannel = /^[a-z0-9_]{1,25}$/.test(c) ? c : "";
+    } else if (k === "chatUrl") {
       target.chatUrl = cleanUrl(v);
     } else if (k === "items") {
       if (Array.isArray(v)) target.items = v.slice(0, 50).map(cleanItem).filter(Boolean);

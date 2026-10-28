@@ -65,11 +65,11 @@ select{width:100%;background:#0b0d14;color:var(--t);border:1px solid var(--line)
 </div>
 
 <div class="card"><h2>Chat einblenden</h2>
- <label>Twitch-Kanalname</label><div class="row"><input id="tw" placeholder="thewhiteman51de"><button class="g" style="flex:none;margin:0" onclick="setChat('https://www.twitch.tv/embed/'+encodeURIComponent(tw.value.trim())+'/chat?parent={host}&darkpopout')">Twitch-Chat</button></div>
+ <label>Twitch-Kanalname</label><div class="row"><input id="tw" placeholder="thewhiteman51de"><button style="flex:none;margin:0" onclick="patch({twitchChannel:tw.value,chatUrl:''})">Eigener Chat (empfohlen)</button><button class="g" style="flex:none;margin:0" onclick="setChat('https://www.twitch.tv/embed/'+encodeURIComponent(tw.value.trim())+'/chat?parent={host}&darkpopout')">Twitch-Embed</button></div>
  <label>YouTube-Live-Video-ID</label><div class="row"><input id="yt" placeholder="z. B. dQw4w9WgXcQ"><button class="g" style="flex:none;margin:0" onclick="setChat('https://www.youtube.com/live_chat?v='+encodeURIComponent(yt.value.trim())+'&embed_domain={host}&dark_theme=1')">YouTube-Chat</button></div>
  <label>oder eigene Chat-Adresse</label><input id="chatUrl" placeholder="https://…">
  <button onclick="setChat(chatUrl.value)">Übernehmen</button><button class="g" onclick="setChat('')">Chat entfernen</button>
- <div style="color:var(--m);font-size:13px;margin-top:8px">Position und Größe: im Layout-Editor die Box „Chat“ verschieben. Ein-/Ausblenden unter „Ein-/Ausblenden“.</div>
+ <div style="color:var(--m);font-size:13px;margin-top:8px"><b>Eigener Chat</b> liest den Twitch-Chat anonym mit (ohne Login, ohne Twitch-Banner/Regeln) und zeigt ihn im Overlay-Design inkl. Emotes. „Twitch-Embed“ nutzt die Twitch-Seite, die eine Zustimmung verlangt.<br>Position und Größe: im Layout-Editor die Box „Chat“ verschieben. Ein-/Ausblenden unter „Ein-/Ausblenden“.</div>
 </div>
 
 <div class="card"><h2>OBS-Steuerung</h2>
@@ -140,7 +140,7 @@ const patch=o=>post("/api/state",o);
 const tog=el=>{patch({[el.id]:el.checked});S[el.id]=el.checked;draw()};
 const saveText=()=>patch({name:$("name").value,topic:topic.value,colorA:colorA.value,colorB:colorB.value,
   startingText:startingText.value,brbText:brbText.value,endingText:endingText.value,nextStream:nextStream.value});
-const setChat=u=>patch({chatUrl:u});
+const setChat=u=>patch({chatUrl:u,twitchChannel:""});
 const saveGoal=()=>patch({goal:{label:gl.value,current:+gc.value,target:+gt.value}});
 const bump=d=>patch({goal:{...S.goal,current:Math.max(0,S.goal.current+d)}});
 const saveLists=()=>patch({
@@ -155,7 +155,7 @@ function fill(s){
   for(const k of ["name","topic","colorA","colorB","startingText","brbText","endingText","nextStream"])f($(k),s[k]);
   for(const k of ["camVisible","liveVisible","lowerThirdVisible","chatVisible","goalVisible","tickerVisible"])$(k).checked=s[k];
   for(const k of ["liveText","tickerTag","chatTitle"])f($(k),s[k]);
-  f($("chatUrl"),s.chatUrl);f(gl,s.goal.label);f(gc,s.goal.current);f(gt,s.goal.target);
+  f($("chatUrl"),s.chatUrl);f($("tw"),s.twitchChannel||"");f(gl,s.goal.label);f(gc,s.goal.current);f(gt,s.goal.target);
   f(ticker,s.ticker.join("\n"));f(socials,s.socials.map(x=>x.label+" | "+x.value).join("\n"));
 }
 
