@@ -1,0 +1,18 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"><script src="config.js"></script><title>Alerts</title></head>
+<body>
+<div class="panel alert" id="a"><div class="k" id="k"></div><div class="w grad" id="w"></div><div class="m" id="m"></div></div>
+<script>
+// Aufruf per JS: window.showAlert("Neuer Follower","Name","Danke!")
+// Test: Taste F = Follower, S = Sub, D = Donation
+const queue=[];let busy=false;
+window.showAlert=(kind,who,msg="")=>{queue.push([kind,who,msg]);run()};
+function run(){if(busy||!queue.length)return;busy=true;const [kk,ww,mm]=queue.shift();
+ k.textContent=kk;w.textContent=ww;m.textContent=mm;a.classList.add("show");
+ setTimeout(()=>{a.classList.remove("show");setTimeout(()=>{busy=false;run()},800)},5000)}
+addEventListener("keydown",e=>{
+ if(e.key=="f")showAlert("Neuer Follower","Testuser","Willkommen im Team!");
+ if(e.key=="s")showAlert("Neues Abo","Testuser","Danke für den Support ❤");
+ if(e.key=="d")showAlert("Spende","Testuser","5,00 € – Danke!");});
+const q=new URLSearchParams(location.search);
+if(q.get("test"))showAlert("Neuer Follower","Testuser","Willkommen im Team!");
+</script></body></html>

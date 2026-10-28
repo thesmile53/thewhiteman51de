@@ -1,0 +1,14 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"><script src="config.js"></script><title>BRB</title></head>
+<body class="solid"><div class="grid"></div>
+<div class="center">
+  <div class="brand grad" id="n"></div>
+  <div class="big pulse" id="t"></div>
+  <div class="sub">Pause seit <span id="c">00:00</span></div>
+</div>
+<div class="socials" id="s"></div>
+<script>
+const C=CONFIG;n.textContent=C.name;t.textContent=C.brbText;
+s.innerHTML=C.socials.map(x=>"<div><b>"+x.label+"</b>"+x.value+"</div>").join("");
+const st=Date.now();setInterval(()=>{const r=(Date.now()-st)/1000|0;
+ c.textContent=String(r/60|0).padStart(2,"0")+":"+String(r%60).padStart(2,"0");},500);
+</script></body></html>

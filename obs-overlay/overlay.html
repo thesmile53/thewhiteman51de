@@ -1,0 +1,21 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"><script src="config.js"></script><title>Live Overlay</title></head>
+<body>
+<!-- Transparenter Rahmen: Gameplay liegt darunter, Webcam in den Cam-Rahmen schieben -->
+<div class="frame cam"></div>
+<div class="live"><i></i>LIVE</div>
+<div class="panel lower" id="lt"><div class="n grad" id="n"></div><div class="t" id="tp"></div></div>
+<div class="panel chat"><h4>Chat</h4>Chat-Browserquelle hier einblenden (Twitch/YouTube Chat-URL).</div>
+<div class="panel goal"><div class="l"><span id="gl"></span><span id="gv"></span></div><div class="bar"><i id="gb"></i></div></div>
+<div class="panel bottom"><div class="tag">INFO</div><div class="tick" id="tk"></div></div>
+<script>
+const C=CONFIG;n.textContent=C.name;tp.textContent=C.topic;
+const q=new URLSearchParams(location.search);
+const g={...C.goal,current:+q.get("cur")||C.goal.current,target:+q.get("target")||C.goal.target};
+gl.textContent=g.label;gv.textContent=g.current+" / "+g.target;
+setTimeout(()=>gb.style.width=Math.min(100,g.current/g.target*100)+"%",300);
+setTimeout(()=>lt.classList.add("show"),800);
+setInterval(()=>{lt.classList.toggle("show");},12000);
+let i=0;const items=[...C.ticker,...C.socials.map(s=>s.label+": "+s.value)];
+function nxt(){tk.style.opacity=0;setTimeout(()=>{tk.textContent=items[i++%items.length];tk.style.opacity=1},500)}
+nxt();setInterval(nxt,6000);
+</script></body></html>
