@@ -103,7 +103,7 @@ async function post(url,body={}){
 }
 const patch=o=>post("/api/state",o);
 const tog=el=>patch({[el.id]:el.checked});
-const saveText=()=>patch({name:name.value,topic:topic.value,colorA:colorA.value,colorB:colorB.value,
+const saveText=()=>patch({name:$("name").value,topic:topic.value,colorA:colorA.value,colorB:colorB.value,
   startingText:startingText.value,brbText:brbText.value,endingText:endingText.value,nextStream:nextStream.value});
 const saveGoal=()=>patch({goal:{label:gl.value,current:+gc.value,target:+gt.value}});
 const bump=d=>patch({goal:{...S.goal,current:Math.max(0,S.goal.current+d)}});
