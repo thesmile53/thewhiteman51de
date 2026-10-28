@@ -54,3 +54,6 @@ Jede Quelle platzierst du im Layout-Editor (gelbe Boxen), kannst sie ein-/ausble
 
 ## Chat einblenden
 Kontrollpanel → Karte **Chat einblenden**: Twitch-Kanalname oder YouTube-Live-Video-ID eintragen und auf den Knopf klicken (oder eine eigene Chat-Adresse eingeben). Der Chat erscheint in der Chat-Box des Live-Overlays; Position/Größe über den Layout-Editor („Chat“). Die Adresse wird automatisch an den Hostnamen angepasst, unter dem OBS das Overlay lädt (z. B. `localhost`).
+
+## Live-Overlay bearbeiten
+Kontrollpanel → **Live-Overlay bearbeiten**: Webcam-Rahmen, LIVE-Badge, Lower Third, Chat, Ziel-Balken und Ticker lassen sich einzeln an- und ausschalten; LIVE-Text, Ticker-Label und Chat-Titel sind änderbar. Ausgeblendete Elemente erscheinen im Layout-Editor abgedunkelt.

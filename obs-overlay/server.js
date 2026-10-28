@@ -22,6 +22,11 @@ const DEFAULT_LAYOUT = {
 };
 
 const DEFAULT_STATE = {
+  camVisible: true,
+  liveVisible: true,
+  liveText: "LIVE",
+  tickerTag: "INFO",
+  chatTitle: "Chat",
   chatUrl: "", // Chat-Adresse für die Chat-Box ({host} = Hostname der Overlay-Seite)
   items: [], // selbst erstellte Quellen: text | image | embed | box
   layout: JSON.parse(JSON.stringify(DEFAULT_LAYOUT)),

@@ -71,11 +71,16 @@ select{width:100%;background:#0b0d14;color:var(--t);border:1px solid var(--line)
  <div style="color:var(--m);font-size:13px;margin-top:8px">Position und Größe: im Layout-Editor die Box „Chat“ verschieben. Ein-/Ausblenden unter „Ein-/Ausblenden“.</div>
 </div>
 
-<div class="card"><h2>Ein-/Ausblenden</h2>
- <div class="tog"><input type="checkbox" id="lowerThirdVisible" onchange="tog(this)"><span>Lower Third</span></div>
+<div class="card"><h2>Live-Overlay bearbeiten</h2>
+ <div style="color:var(--m);font-size:13px">Elemente des Live-Overlays an-/ausschalten:</div>
+ <div class="tog"><input type="checkbox" id="camVisible" onchange="tog(this)"><span>Webcam-Rahmen</span></div>
+ <div class="tog"><input type="checkbox" id="liveVisible" onchange="tog(this)"><span>LIVE-Badge</span></div>
+ <div class="tog"><input type="checkbox" id="lowerThirdVisible" onchange="tog(this)"><span>Lower Third (Name &amp; Thema)</span></div>
  <div class="tog"><input type="checkbox" id="chatVisible" onchange="tog(this)"><span>Chat-Box</span></div>
  <div class="tog"><input type="checkbox" id="goalVisible" onchange="tog(this)"><span>Ziel-Balken</span></div>
  <div class="tog"><input type="checkbox" id="tickerVisible" onchange="tog(this)"><span>Ticker</span></div>
+ <div class="row"><div><label>LIVE-Text</label><input id="liveText"></div><div><label>Ticker-Label</label><input id="tickerTag"></div><div><label>Chat-Titel</label><input id="chatTitle"></div></div>
+ <button onclick="patch({liveText:liveText.value,tickerTag:tickerTag.value,chatTitle:chatTitle.value})">Texte speichern</button>
 </div>
 
 <div class="card"><h2>Alerts</h2>
@@ -120,7 +125,7 @@ async function post(url,body={}){
   return r;
 }
 const patch=o=>post("/api/state",o);
-const tog=el=>patch({[el.id]:el.checked});
+const tog=el=>{patch({[el.id]:el.checked});S[el.id]=el.checked;draw()};
 const saveText=()=>patch({name:$("name").value,topic:topic.value,colorA:colorA.value,colorB:colorB.value,
   startingText:startingText.value,brbText:brbText.value,endingText:endingText.value,nextStream:nextStream.value});
 const setChat=u=>patch({chatUrl:u});
@@ -136,7 +141,8 @@ function fill(s){
   S=s;fillLayout(s.layout,s.items);
   const f=(el,v)=>{if(document.activeElement!==el)el.value=v};
   for(const k of ["name","topic","colorA","colorB","startingText","brbText","endingText","nextStream"])f($(k),s[k]);
-  for(const k of ["lowerThirdVisible","chatVisible","goalVisible","tickerVisible"])$(k).checked=s[k];
+  for(const k of ["camVisible","liveVisible","lowerThirdVisible","chatVisible","goalVisible","tickerVisible"])$(k).checked=s[k];
+  for(const k of ["liveText","tickerTag","chatTitle"])f($(k),s[k]);
   f($("chatUrl"),s.chatUrl);f(gl,s.goal.label);f(gc,s.goal.current);f(gt,s.goal.target);
   f(ticker,s.ticker.join("\n"));f(socials,s.socials.map(x=>x.label+" | "+x.value).join("\n"));
 }
@@ -163,7 +169,8 @@ for(const id in NAMES)mkBox(id);
 function select(id){sel=id;for(const i in boxes)boxes[i].classList.toggle("sel",i===id);nums()}
 function nums(){if(!sel||!geo(sel))return;lname.value=title(sel);for(const [i,f] of [["lx","x"],["ly","y"],["lw","w"],["lh","h"]])if(document.activeElement!==$(i))$(i).value=geo(sel)[f]}
 function draw(){for(const id in boxes){const l=geo(id);if(!l)continue;const b=boxes[id].style;b.left=l.x+"px";b.top=l.y+"px";b.width=l.w+"px";b.height=l.h+"px";
- boxes[id].firstChild.textContent=title(id);b.opacity=l.visible===false?.35:1}nums()}
+ boxes[id].firstChild.textContent=title(id);const fl={cam:"camVisible",live:"liveVisible",lower:"lowerThirdVisible",chat:"chatVisible",goal:"goalVisible",bottom:"tickerVisible"}[id];
+ b.opacity=(l.visible===false||(fl&&S[fl]===false))?.3:1}nums()}
 function push(force){const t=Date.now();if(!force&&t-last<80)return;last=t;patch({layout:L,items:ITEMS})}
 for(const [i,f] of [["lx","x"],["ly","y"],["lw","w"],["lh","h"]])$(i).oninput=()=>{if(sel&&geo(sel)){geo(sel)[f]=+$(i).value;draw();push(true)}};
 addEventListener("keydown",e=>{if(!sel||!geo(sel)||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;

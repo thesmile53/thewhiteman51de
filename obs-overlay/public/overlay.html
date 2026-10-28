@@ -1,22 +1,25 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"><script src="client.js"></script><title>Live Overlay</title></head>
 <body>
 <div class="frame cam" id="cam"></div>
-<div class="live" id="lv"><i></i>LIVE</div>
+<div class="live" id="lv"><i></i><span id="lvt">LIVE</span></div>
 <div class="panel lower" id="lt"><div class="n grad" id="n"></div><div class="t" id="tp"></div></div>
 <div class="panel chat" id="ch"><h4>Chat</h4>Chat-Browserquelle hier einblenden (Twitch/YouTube Chat-URL).</div>
 <div class="panel goal" id="go"><div class="l"><span id="gl"></span><span id="gv"></span></div><div class="bar"><i id="gb"></i></div></div>
-<div class="panel bottom" id="bt"><div class="tag">INFO</div><div class="tick" id="tk"></div></div>
+<div class="panel bottom" id="bt"><div class="tag" id="tg">INFO</div><div class="tick" id="tk"></div></div>
 <div id="custom"></div>
 <script>
 let items=[],i=0;
 let chatSrc="";
 Overlay.on("state",st=>{
  const cu=(st.chatUrl||"").replace(/\{host\}/g,location.hostname);
- if(cu!==chatSrc){chatSrc=cu;ch.classList.toggle("embed",!!cu);ch.innerHTML=cu?'<iframe src="'+cu.replace(/"/g,"&quot;")+'"></iframe>':'<h4>Chat</h4>Chat-URL im Kontrollpanel eintragen.'}
+ if(cu!==chatSrc){chatSrc=cu;ch.classList.toggle("embed",!!cu);ch.innerHTML=cu?'<iframe src="'+cu.replace(/"/g,"&quot;")+'"></iframe>':'<h4></h4>Chat-URL im Kontrollpanel eintragen.'}
  Overlay.renderItems(custom,st.items);
  Overlay.applyLayout(st.layout,{cam,live:lv,lower:lt,chat:ch,goal:go,bottom:bt});
  n.textContent=st.name;tp.textContent=st.topic;
  lt.classList.toggle("show",st.lowerThirdVisible);
+ const h4=ch.querySelector("h4");if(h4)h4.textContent=st.chatTitle;
+ cam.style.display=st.camVisible?"":"none";lv.style.display=st.liveVisible?"":"none";
+ lvt.textContent=st.liveText;tg.textContent=st.tickerTag;
  ch.style.display=st.chatVisible?"":"none";
  go.style.display=st.goalVisible?"":"none";
  bt.style.display=st.tickerVisible?"":"none";
