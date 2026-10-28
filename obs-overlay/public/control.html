@@ -66,7 +66,11 @@ select{width:100%;background:#0b0d14;color:var(--t);border:1px solid var(--line)
 
 <div class="card"><h2>Chat einblenden</h2>
  <label>Twitch-Kanalname</label><div class="row"><input id="tw" placeholder="thewhiteman51de"><button style="flex:none;margin:0" onclick="patch({twitchChannel:tw.value,chatUrl:''})">Eigener Chat (empfohlen)</button><button class="g" style="flex:none;margin:0" onclick="setChat('https://www.twitch.tv/embed/'+encodeURIComponent(tw.value.trim())+'/chat?parent={host}&darkpopout')">Twitch-Embed</button></div>
- <label>YouTube-Live-Video-ID</label><div class="row"><input id="yt" placeholder="z. B. dQw4w9WgXcQ"><button class="g" style="flex:none;margin:0" onclick="setChat('https://www.youtube.com/live_chat?v='+encodeURIComponent(yt.value.trim())+'&embed_domain={host}&dark_theme=1')">YouTube-Chat</button></div>
+ <label>YouTube-API-Schlüssel (bleibt auf dem Server)</label>
+ <div class="row"><input id="ytkey" type="password" autocomplete="off" placeholder="AIza…"><button class="g" style="flex:none;margin:0" onclick="ytSaveKey()">Speichern</button></div>
+ <label>YouTube-Livestream (Link oder Video-ID)</label>
+ <div class="row"><input id="yt" placeholder="https://www.youtube.com/watch?v=…"><button style="flex:none;margin:0" onclick="ytOn()">YouTube-Chat (API)</button><button class="g" style="flex:none;margin:0" onclick="ytEmbed()">Embed</button></div>
+ <div id="ytst" style="color:var(--m);font-size:13px;margin-top:6px"></div>
  <label>oder eigene Chat-Adresse</label><input id="chatUrl" placeholder="https://…">
  <button onclick="setChat(chatUrl.value)">Übernehmen</button><button class="g" onclick="setChat('')">Chat entfernen</button>
  <div style="color:var(--m);font-size:13px;margin-top:8px"><b>Eigener Chat</b> liest den Twitch-Chat anonym mit (ohne Login, ohne Twitch-Banner/Regeln) und zeigt ihn im Overlay-Design inkl. Emotes. „Twitch-Embed“ nutzt die Twitch-Seite, die eine Zustimmung verlangt.<br>Position und Größe: im Layout-Editor die Box „Chat“ verschieben. Ein-/Ausblenden unter „Ein-/Ausblenden“.</div>
@@ -140,7 +144,15 @@ const patch=o=>post("/api/state",o);
 const tog=el=>{patch({[el.id]:el.checked});S[el.id]=el.checked;draw()};
 const saveText=()=>patch({name:$("name").value,topic:topic.value,colorA:colorA.value,colorB:colorB.value,
   startingText:startingText.value,brbText:brbText.value,endingText:endingText.value,nextStream:nextStream.value});
-const setChat=u=>patch({chatUrl:u,twitchChannel:""});
+const setChat=u=>patch({chatUrl:u,twitchChannel:"",youtubeVideoId:""});
+const ytId=v=>{v=v.trim();const m=v.match(/(?:v=|youtu\.be\/|\/live\/|\/embed\/)([\w-]{6,20})/);return m?m[1]:v};
+const ytOn=async()=>{await patch({youtubeVideoId:ytId(yt.value),chatUrl:""});setTimeout(ytRefresh,1500)};
+const ytEmbed=()=>setChat('https://www.youtube.com/live_chat?v='+encodeURIComponent(ytId(yt.value))+'&embed_domain={host}&dark_theme=1');
+const ytSaveKey=async()=>{await post("/api/youtube/key",{key:ytkey.value});ytkey.value="";ytRefresh()};
+async function ytRefresh(){const s=await (await post("/api/youtube/status")).json();
+ ytst.textContent=!s.hasKey?"Kein API-Schlüssel gespeichert.":s.videoId?(s.active?"✔ YouTube-Chat verbunden.":"✖ "+(s.error||"verbinde…")):"Schlüssel gespeichert. Livestream-Link eintragen.";
+ ytst.style.color=s.active?"#34d399":s.error?"#f87171":"var(--m)"}
+setInterval(()=>{if(!document.hidden)ytRefresh()},5000);setTimeout(ytRefresh,600);
 const saveGoal=()=>patch({goal:{label:gl.value,current:+gc.value,target:+gt.value}});
 const bump=d=>patch({goal:{...S.goal,current:Math.max(0,S.goal.current+d)}});
 const saveLists=()=>patch({
@@ -155,7 +167,7 @@ function fill(s){
   for(const k of ["name","topic","colorA","colorB","startingText","brbText","endingText","nextStream"])f($(k),s[k]);
   for(const k of ["camVisible","liveVisible","lowerThirdVisible","chatVisible","goalVisible","tickerVisible"])$(k).checked=s[k];
   for(const k of ["liveText","tickerTag","chatTitle"])f($(k),s[k]);
-  f($("chatUrl"),s.chatUrl);f($("tw"),s.twitchChannel||"");f(gl,s.goal.label);f(gc,s.goal.current);f(gt,s.goal.target);
+  f($("chatUrl"),s.chatUrl);f($("tw"),s.twitchChannel||"");f($("yt"),s.youtubeVideoId||$("yt").value);f(gl,s.goal.label);f(gc,s.goal.current);f(gt,s.goal.target);
   f(ticker,s.ticker.join("\n"));f(socials,s.socials.map(x=>x.label+" | "+x.value).join("\n"));
 }
 

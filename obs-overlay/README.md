@@ -69,3 +69,10 @@ Die Zugangsdaten stehen in `obs-config.json` (nur lokal, nicht im Repo) und werd
 
 ## Eigener Twitch-Chat (ohne Zustimmungs-Banner)
 Der eingebettete Twitch-Chat („Twitch-Embed“) verlangt eine Zustimmung zu Twitchs Regeln/Cookies. Besser: im Panel unter **Chat einblenden** den Kanalnamen eintragen und **Eigener Chat (empfohlen)** klicken. Das Overlay liest den öffentlichen Chat dann anonym (read-only, ohne Login) über Twitchs offizielle IRC-Schnittstelle mit und zeigt ihn im eigenen Design inkl. Emotes. Schreiben ist darüber nicht möglich.
+
+## YouTube-Chat über die offizielle API
+1. In der [Google Cloud Console](https://console.cloud.google.com/) ein Projekt anlegen, **YouTube Data API v3** aktivieren und unter *Anmeldedaten* einen **API-Schlüssel** erstellen.
+2. Panel → **Chat einblenden** → Schlüssel einfügen → *Speichern* (liegt nur in `youtube-config.json` auf dem Server, nie im Browser/Repo).
+3. Link oder ID deines **laufenden** Livestreams eintragen → **YouTube-Chat (API)**. Der Status darunter zeigt, ob die Verbindung steht.
+
+Twitch- und YouTube-Chat können gleichzeitig in derselben Chat-Box laufen (Twitch-Kanal + YouTube-Stream eintragen). YouTube-Nachrichten sind rot, Kanalbesitzer gelb, Moderatoren grün. Hinweis: Das tägliche Kontingent (Standard 10.000 Einheiten, ein Abruf ≈ 5) reicht bei ca. 8 s Abstand für mehrere Stunden Streaming. Ältere Nachrichten vor dem Start werden nicht angezeigt.

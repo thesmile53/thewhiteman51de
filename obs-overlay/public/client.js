@@ -10,7 +10,7 @@
   addEventListener("DOMContentLoaded", fit);
 
   let offset = 0;
-  const handlers = { state: [], alert: [], scene: [] };
+  const handlers = { state: [], alert: [], scene: [], chat: [] };
   window.Overlay = {
     on: (ev, fn) => handlers[ev].push(fn),
     now: () => Date.now() + offset, // Serverzeit
@@ -70,5 +70,6 @@
     handlers.state.forEach(f => f(s));
   });
   es.addEventListener("alert", e => handlers.alert.forEach(f => f(JSON.parse(e.data))));
+  es.addEventListener("chat", e => handlers.chat.forEach(f => f(JSON.parse(e.data))));
   es.addEventListener("scene", e => handlers.scene.forEach(f => f(JSON.parse(e.data))));
 })();

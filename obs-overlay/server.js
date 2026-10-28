@@ -7,6 +7,7 @@ const path = require("path");
 const PORT = +process.env.PORT || 3000;
 const PASSWORD = process.env.CONTROL_PASSWORD || "";
 const OBS = require("./obs");
+const YT = require("./yt");
 const PUBLIC = path.join(__dirname, "public");
 const STATE_FILE = path.join(__dirname, "state.json");
 const UPLOADS = path.join(__dirname, "uploads");
@@ -23,6 +24,7 @@ const DEFAULT_LAYOUT = {
 };
 
 const DEFAULT_STATE = {
+  youtubeVideoId: "", // YouTube-Live-Video-ID für den API-Chat
   twitchChannel: "", // eigener Twitch-Chat (anonym per IRC, ohne Twitch-Banner)
   camVisible: true,
   liveVisible: true,
@@ -68,14 +70,17 @@ const broadcast = (event, data) => {
   const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
   for (const res of clients) res.write(msg);
 };
-const pushState = () => { save(); broadcast("state", { ...state, now: Date.now(), ver: VER }); };
+const pushState = () => { YT.sync(state.youtubeVideoId); save(); broadcast("state", { ...state, now: Date.now(), ver: VER }); };
 
 // Nur bekannte Schlüssel mit passendem Typ übernehmen.
 function merge(target, patch) {
   for (const k of Object.keys(DEFAULT_STATE)) {
     if (!(k in patch)) continue;
     const def = DEFAULT_STATE[k], v = patch[k];
-    if (k === "twitchChannel") {
+    if (k === "youtubeVideoId") {
+      const id = String(v).trim();
+      target.youtubeVideoId = /^[\w-]{6,20}$/.test(id) ? id : "";
+    } else if (k === "twitchChannel") {
       const c = String(v).trim().replace(/^#/, "").toLowerCase();
       target.twitchChannel = /^[a-z0-9_]{1,25}$/.test(c) ? c : "";
     } else if (k === "chatUrl") {
@@ -183,6 +188,8 @@ const server = http.createServer(async (req, res) => {
         fs.writeFileSync(path.join(UPLOADS, fname), buf);
         return json(res, 200, { url: "/uploads/" + fname });
       }
+      case "/api/youtube/key": YT.setKey(body.key); return json(res, 200, YT.status());
+      case "/api/youtube/status": return json(res, 200, YT.status());
       case "/api/obs/connect": await OBS.connect(body); return json(res, 200, OBS.status());
       case "/api/obs/disconnect": OBS.disconnect(); return json(res, 200, OBS.status());
       case "/api/obs/status": return json(res, 200, OBS.status());
@@ -222,6 +229,9 @@ const server = http.createServer(async (req, res) => {
     res.end(data);
   });
 });
+
+YT.onMessage = m => broadcast("chat", m);
+YT.sync(state.youtubeVideoId);
 
 server.listen(PORT, () => {
   console.log(`OBS-Overlay-Server läuft:  http://localhost:${PORT}`);
