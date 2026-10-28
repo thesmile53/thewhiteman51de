@@ -76,3 +76,11 @@ Der eingebettete Twitch-Chat („Twitch-Embed“) verlangt eine Zustimmung zu Tw
 3. Link oder ID deines **laufenden** Livestreams eintragen → **YouTube-Chat (API)**. Der Status darunter zeigt, ob die Verbindung steht.
 
 Twitch- und YouTube-Chat können gleichzeitig in derselben Chat-Box laufen (Twitch-Kanal + YouTube-Stream eintragen). YouTube-Nachrichten sind rot, Kanalbesitzer gelb, Moderatoren grün. Hinweis: Das tägliche Kontingent (Standard 10.000 Einheiten, ein Abruf ≈ 5) reicht bei ca. 8 s Abstand für mehrere Stunden Streaming. Ältere Nachrichten vor dem Start werden nicht angezeigt.
+
+## Twitch-Chat über die offizielle API (EventSub)
+Alternative zum anonymen Mitlesen („Eigener Chat“). Einmalige Einrichtung:
+1. Auf <https://dev.twitch.tv/console> eine Anwendung registrieren: Client-Typ **Öffentlich**, OAuth-Redirect-URL z. B. `http://localhost`, Kategorie beliebig.
+2. Die **Client-ID** im Panel (Karte *Twitch-Chat über die API*) eintragen → **Mit Twitch verbinden**.
+3. Das Panel zeigt einen Link und einen Code. Link öffnen, mit Twitch anmelden, Code eingeben, bestätigen.
+
+Danach liest der Server den Chat über Twitchs EventSub-WebSocket (Berechtigung nur `user:read:chat`) und schickt ihn an das Overlay. Ohne Kanalname wird dein eigener Kanal gelesen, sonst der Kanal aus dem Feld „Twitch-Kanalname“. Tokens liegen nur in `twitch-config.json` auf dem Server (nicht im Repo, nie im Browser) und werden automatisch erneuert. Ist die API verbunden, wird der anonyme IRC-Weg nicht zusätzlich genutzt (keine doppelten Nachrichten).

@@ -13,11 +13,11 @@ let chatKey="",irc=null,ircTimer=null;
 const IRC_URL=new URLSearchParams(location.search).get("irc")||"wss://irc-ws.chat.twitch.tv:443";
 function setChat(st){
  const cu=(st.chatUrl||"").replace(/\{host\}/g,location.hostname);
- const native=st.twitchChannel||st.youtubeVideoId;
- const key=native?"irc:"+st.twitchChannel+"|"+st.youtubeVideoId:cu?"url:"+cu:"none";
+ const native=st.twitchChannel||st.youtubeVideoId||st.twitchApi;
+ const key=native?"irc:"+st.twitchChannel+"|"+st.youtubeVideoId+"|"+(st.twitchApi?"api":""):cu?"url:"+cu:"none";
  if(key===chatKey)return;chatKey=key;stopIrc();
  ch.classList.toggle("embed",key.startsWith("url:"));
- if(key.startsWith("irc:")){ch.innerHTML='<h4></h4><div class="msgs" id="msgs"></div>';if(st.twitchChannel)startIrc(st.twitchChannel)}
+ if(key.startsWith("irc:")){ch.innerHTML='<h4></h4><div class="msgs" id="msgs"></div>';if(st.twitchChannel&&!st.twitchApi)startIrc(st.twitchChannel)}
  else if(cu)ch.innerHTML='<iframe src="'+cu.replace(/"/g,"&quot;")+'"></iframe>';
  else ch.innerHTML='<h4></h4>Chat im Kontrollpanel einrichten.';
 }
@@ -48,7 +48,10 @@ function addMsg(name,color,html){
  d.innerHTML='<b style="color:'+color+'">'+esc(name)+'</b> '+html;
  box.appendChild(d);while(box.children.length>40)box.firstChild.remove();
 }
-Overlay.on("chat",m=>addMsg(m.name,m.role=="owner"?"#fbbf24":m.role=="mod"?"#34d399":"#ff6b6b",esc(m.text)));
+Overlay.on("chat",m=>{
+ if(m.src=="twitch"){const c=/^#[0-9a-f]{6}$/i.test(m.color)?m.color:"#a855f7";
+  return addMsg(m.name,c,m.parts.map(p=>p.t=="emote"?'<img class="emo" src="https://static-cdn.jtvnw.net/emoticons/v2/'+encodeURIComponent(p.id)+'/default/dark/2.0">':esc(p.v)).join(""))}
+ addMsg(m.name,m.role=="owner"?"#fbbf24":m.role=="mod"?"#34d399":"#ff6b6b",esc(m.text))});
 Overlay.on("state",st=>{
  setChat(st);
  Overlay.renderItems(custom,st.items);

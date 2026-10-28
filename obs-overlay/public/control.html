@@ -64,6 +64,14 @@ select{width:100%;background:#0b0d14;color:var(--t);border:1px solid var(--line)
  <button onclick="saveText()">Speichern</button><button class="g" onclick="if(confirm('Alles zurücksetzen?'))post('/api/reset')">Zurücksetzen</button>
 </div>
 
+<div class="card"><h2>Twitch-Chat über die API</h2>
+ <div style="color:var(--m);font-size:13px">Offizielle Twitch-API (EventSub) statt anonymem Mitlesen. Einmalig: auf <b>dev.twitch.tv/console</b> eine App registrieren (Client-Typ <b>„Öffentlich“</b>, OAuth-Redirect z. B. <code>http://localhost</code>) und deren <b>Client-ID</b> hier eintragen.</div>
+ <label>Client-ID</label><input id="twcid" autocomplete="off" placeholder="z. B. abcd1234…">
+ <button onclick="twLogin()">Mit Twitch verbinden</button><button class="g" onclick="twLogout()">Trennen</button>
+ <div id="twst" style="margin-top:8px;font-size:14px;color:var(--m)"></div>
+ <div style="color:var(--m);font-size:13px;margin-top:6px">Kanal: Feld „Twitch-Kanalname“ in der Karte „Chat einblenden“ (leer = dein eigener Kanal).</div>
+</div>
+
 <div class="card"><h2>Chat einblenden</h2>
  <label>Twitch-Kanalname</label><div class="row"><input id="tw" placeholder="thewhiteman51de"><button style="flex:none;margin:0" onclick="patch({twitchChannel:tw.value,chatUrl:''})">Eigener Chat (empfohlen)</button><button class="g" style="flex:none;margin:0" onclick="setChat('https://www.twitch.tv/embed/'+encodeURIComponent(tw.value.trim())+'/chat?parent={host}&darkpopout')">Twitch-Embed</button></div>
  <label>YouTube-API-Schlüssel (bleibt auf dem Server)</label>
@@ -148,6 +156,14 @@ const setChat=u=>patch({chatUrl:u,twitchChannel:"",youtubeVideoId:""});
 const ytId=v=>{v=v.trim();const m=v.match(/(?:v=|youtu\.be\/|\/live\/|\/embed\/)([\w-]{6,20})/);return m?m[1]:v};
 const ytOn=async()=>{await patch({youtubeVideoId:ytId(yt.value),chatUrl:""});setTimeout(ytRefresh,1500)};
 const ytEmbed=()=>setChat('https://www.youtube.com/live_chat?v='+encodeURIComponent(ytId(yt.value))+'&embed_domain={host}&dark_theme=1');
+const twLogin=async()=>{const r=await post("/api/twitch/login",{clientId:twcid.value});const j=await r.json();if(!r.ok)twst.textContent="✖ "+j.error;else twRefresh()};
+const twLogout=async()=>{await post("/api/twitch/logout");twRefresh()};
+async function twRefresh(){const s=await (await post("/api/twitch/status")).json();let h="",c="var(--m)";
+ if(s.phase=="waiting"){h='Öffne <a style="color:var(--a)" href="'+esc(s.uri)+'" target="_blank">'+esc(s.uri)+'</a> und gib den Code <b style="font-size:20px;color:#fff;letter-spacing:3px">'+esc(s.code)+'</b> ein …'}
+ else if(s.phase=="connected"){h=s.active?"✔ Verbunden"+(s.login?" als "+esc(s.login):"")+" – Chat läuft.":"✖ "+esc(s.error||"verbinde…");c=s.active?"#34d399":"#f87171"}
+ else {h=s.error?"✖ "+esc(s.error):"Nicht verbunden.";if(s.error)c="#f87171"}
+ twst.innerHTML=h;twst.style.color=c}
+setInterval(()=>{if(!document.hidden)twRefresh()},3000);setTimeout(twRefresh,700);
 const ytSaveKey=async()=>{await post("/api/youtube/key",{key:ytkey.value});ytkey.value="";ytRefresh()};
 async function ytRefresh(){const s=await (await post("/api/youtube/status")).json();
  ytst.textContent=!s.hasKey?"Kein API-Schlüssel gespeichert.":s.videoId?(s.active?"✔ YouTube-Chat verbunden.":"✖ "+(s.error||"verbinde…")):"Schlüssel gespeichert. Livestream-Link eintragen.";

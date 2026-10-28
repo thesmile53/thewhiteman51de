@@ -8,6 +8,7 @@ const PORT = +process.env.PORT || 3000;
 const PASSWORD = process.env.CONTROL_PASSWORD || "";
 const OBS = require("./obs");
 const YT = require("./yt");
+const TW = require("./tw");
 const PUBLIC = path.join(__dirname, "public");
 const STATE_FILE = path.join(__dirname, "state.json");
 const UPLOADS = path.join(__dirname, "uploads");
@@ -65,12 +66,13 @@ try {
 const save = () => fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2), () => {});
 
 const VER = String(Date.now()); // ändert sich bei Serverneustart → Seiten laden sich neu
+const view = () => ({ ...state, now: Date.now(), ver: VER, twitchApi: TW.status().active });
 const clients = new Set();
 const broadcast = (event, data) => {
   const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
   for (const res of clients) res.write(msg);
 };
-const pushState = () => { YT.sync(state.youtubeVideoId); save(); broadcast("state", { ...state, now: Date.now(), ver: VER }); };
+const pushState = () => { YT.sync(state.youtubeVideoId); TW.sync(state.twitchChannel); save(); broadcast("state", view()); };
 
 // Nur bekannte Schlüssel mit passendem Typ übernehmen.
 function merge(target, patch) {
@@ -151,7 +153,7 @@ const server = http.createServer(async (req, res) => {
 
   if (url.pathname === "/events") {
     res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
-    res.write(`event: state\ndata: ${JSON.stringify({ ...state, now: Date.now(), ver: VER })}\n\n`);
+    res.write(`event: state\ndata: ${JSON.stringify(view())}\n\n`);
     clients.add(res);
     const ping = setInterval(() => res.write(": ping\n\n"), 25000);
     req.on("close", () => { clearInterval(ping); clients.delete(res); });
@@ -159,7 +161,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname.startsWith("/api/")) {
-    if (req.method === "GET" && url.pathname === "/api/state") return json(res, 200, { ...state, now: Date.now(), ver: VER });
+    if (req.method === "GET" && url.pathname === "/api/state") return json(res, 200, view());
     if (req.method !== "POST") return json(res, 405, { error: "method" });
     if (PASSWORD && req.headers["x-password"] !== PASSWORD) return json(res, 401, { error: "Falsches Passwort" });
     let body;
@@ -190,6 +192,10 @@ const server = http.createServer(async (req, res) => {
       }
       case "/api/youtube/key": YT.setKey(body.key); return json(res, 200, YT.status());
       case "/api/youtube/status": return json(res, 200, YT.status());
+      case "/api/twitch/login":
+        try { return json(res, 200, await TW.login(body.clientId)); } catch (e) { return json(res, 400, { error: e.message }); }
+      case "/api/twitch/logout": TW.logout(); return json(res, 200, TW.status());
+      case "/api/twitch/status": return json(res, 200, TW.status());
       case "/api/obs/connect": await OBS.connect(body); return json(res, 200, OBS.status());
       case "/api/obs/disconnect": OBS.disconnect(); return json(res, 200, OBS.status());
       case "/api/obs/status": return json(res, 200, OBS.status());
@@ -232,6 +238,9 @@ const server = http.createServer(async (req, res) => {
 
 YT.onMessage = m => broadcast("chat", m);
 YT.sync(state.youtubeVideoId);
+TW.onMessage = m => broadcast("chat", m);
+TW.onChange = () => broadcast("state", view());
+TW.start(state.twitchChannel);
 
 server.listen(PORT, () => {
   console.log(`OBS-Overlay-Server läuft:  http://localhost:${PORT}`);
