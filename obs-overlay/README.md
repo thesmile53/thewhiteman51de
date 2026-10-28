@@ -38,3 +38,6 @@ Hinweis: Das Panel ist nur im lokalen Netz gedacht. Bei Zugriff aus dem Internet
 
 ## Größe / Skalierung
 Die Seiten skalieren sich automatisch auf die Größe der Browser-Quelle (zentriert, ohne Verzerrung). Am besten stellst du die Quelle auf die **Canvas-Größe** deiner OBS-Szene (Einstellungen → Video → Basisauflösung) und ziehst sie auf Vollbild (Strg+F). Bei 16:9 füllt das Overlay dann alles aus. Die Positionen für Webcam/Chat oben gelten für 1920×1080 und müssen bei anderer Auflösung proportional umgerechnet werden.
+
+## Layout selbst anordnen
+Im Kontrollpanel (oben, **Layout-Editor**) kannst du Webcam, LIVE-Badge, Lower Third, Chat, Ziel-Balken, Ticker und Alert-Box per Maus verschieben und in der Größe ändern (Ecke unten rechts). Feintuning mit Pfeiltasten (Shift = 10 px) oder den Zahlenfeldern. Die Änderungen sind sofort in OBS sichtbar und werden gespeichert; „Layout zurücksetzen“ stellt die Standardpositionen wieder her.

@@ -15,6 +15,15 @@
     on: (ev, fn) => handlers[ev].push(fn),
     now: () => Date.now() + offset, // Serverzeit
     fmt: s => String((s / 60) | 0).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"),
+    applyLayout(layout, map) {
+      for (const k in map) {
+        const l = layout && layout[k], el = map[k];
+        if (!l || !el) continue;
+        el.style.left = l.x + "px"; el.style.top = l.y + "px";
+        el.style.width = l.w + "px"; el.style.height = l.h + "px";
+        el.style.right = el.style.bottom = "auto";
+      }
+    },
     socials: s => s.socials.map(x => `<div><b>${esc(x.label)}</b>${esc(x.value)}</div>`).join(""),
   };
   function esc(t) { return String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }

@@ -9,7 +9,19 @@ const PASSWORD = process.env.CONTROL_PASSWORD || "";
 const PUBLIC = path.join(__dirname, "public");
 const STATE_FILE = path.join(__dirname, "state.json");
 
+// Positionen/Größen (px auf 1920x1080), im Web-Editor verschiebbar.
+const DEFAULT_LAYOUT = {
+  cam:   { x: 40,   y: 714,  w: 480,  h: 270 },
+  live:  { x: 40,   y: 40,   w: 132,  h: 45 },
+  lower: { x: 40,   y: 582,  w: 480,  h: 104 },
+  chat:  { x: 1460, y: 40,   w: 420,  h: 560 },
+  goal:  { x: 1460, y: 620,  w: 420,  h: 90 },
+  bottom:{ x: 0,    y: 1020, w: 1920, h: 60 },
+  alert: { x: 560,  y: 120,  w: 800,  h: 170 },
+};
+
 const DEFAULT_STATE = {
+  layout: JSON.parse(JSON.stringify(DEFAULT_LAYOUT)),
   name: "TheWhiteMan51DE",
   socials: [
     { label: "Twitch", value: "twitch.tv/thewhiteman51de" },
@@ -33,8 +45,11 @@ const DEFAULT_STATE = {
   brbSince: 0,
 };
 
-let state = { ...DEFAULT_STATE };
-try { state = { ...DEFAULT_STATE, ...JSON.parse(fs.readFileSync(STATE_FILE, "utf8")) }; } catch {}
+let state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+try {
+  const saved = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
+  state = { ...state, ...saved, layout: { ...DEFAULT_LAYOUT, ...(saved.layout || {}) } };
+} catch {}
 const save = () => fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2), () => {});
 
 const clients = new Set();
@@ -49,7 +64,15 @@ function merge(target, patch) {
   for (const k of Object.keys(DEFAULT_STATE)) {
     if (!(k in patch)) continue;
     const def = DEFAULT_STATE[k], v = patch[k];
-    if (k === "goal" && v && typeof v === "object") {
+    if (k === "layout" && v && typeof v === "object") {
+      for (const el of Object.keys(DEFAULT_LAYOUT)) {
+        const n = v[el];
+        if (!n || typeof n !== "object") continue;
+        const cur = target.layout[el] || DEFAULT_LAYOUT[el];
+        const num = (key, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(n[key] ?? cur[key])) || 0));
+        target.layout[el] = { x: num("x", -2000, 3840), y: num("y", -2000, 2160), w: num("w", 20, 3840), h: num("h", 20, 2160) };
+      }
+    } else if (k === "goal" && v && typeof v === "object") {
       target.goal = {
         label: String(v.label ?? target.goal.label).slice(0, 60),
         current: Number(v.current ?? target.goal.current) || 0,
@@ -109,7 +132,9 @@ const server = http.createServer(async (req, res) => {
         state.countdownEnd = Date.now() + Math.max(0, Number(body.minutes) || 0) * 60000; pushState(); return json(res, 200, state);
       case "/api/brb-reset": state.brbSince = Date.now(); pushState(); return json(res, 200, state);
       case "/api/scene": broadcast("scene", { name: String(body.name || "").slice(0, 30) }); return json(res, 200, {});
-      case "/api/reset": state = { ...DEFAULT_STATE }; pushState(); return json(res, 200, state);
+      case "/api/reset": state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        pushState(); return json(res, 200, state);
+      case "/api/reset-layout": state.layout = JSON.parse(JSON.stringify(DEFAULT_LAYOUT)); pushState(); return json(res, 200, state);
     }
     return json(res, 404, { error: "not found" });
   }

@@ -30,30 +30,30 @@ body.solid{background:radial-gradient(1200px 700px at 20% 10%,#1a1f3d,transparen
 .frame{position:absolute;border-radius:18px}
 .frame{border:0;outline:4px solid var(--a);outline-offset:-4px;background:transparent;
   box-shadow:0 0 0 4px rgba(168,85,247,.55),var(--glow),inset 0 0 30px rgba(0,229,255,.15)}
-.cam{left:40px;bottom:96px;width:480px;height:270px}      /* 16:9 Webcam */
+.cam{left:40px;top:714px;width:480px;height:270px}      /* Standardwerte, überschrieben vom Layout */
 .game{left:0;top:0;width:1920px;height:1080px;outline:none;box-shadow:none}
 .panel{position:absolute;background:var(--panel);border:2px solid var(--line);border-radius:14px;backdrop-filter:blur(6px)}
-.chat{right:40px;top:40px;width:420px;height:560px;padding:18px;color:var(--muted);font-size:22px}
+.chat{left:1460px;top:40px;width:420px;height:560px;padding:18px;color:var(--muted);font-size:22px}
 .chat h4{color:var(--a);letter-spacing:3px;font-size:18px;margin-bottom:10px;text-transform:uppercase}
-.lower{left:40px;bottom:392px;width:480px;padding:16px 22px;transform:translateX(-600px);transition:transform .8s cubic-bezier(.2,.9,.3,1)}
+.lower{left:40px;top:582px;width:480px;height:104px;padding:16px 22px;transform:translateX(-600px);transition:transform .8s cubic-bezier(.2,.9,.3,1)}
 .lower.show{transform:none}
 .lower .n{font-size:34px;font-weight:800}
 .lower .t{font-size:22px;color:var(--muted);margin-top:4px}
-.goal{right:40px;top:620px;width:420px;padding:16px 20px}
+.goal{left:1460px;top:620px;height:90px;width:420px;padding:16px 20px}
 .goal .l{display:flex;justify-content:space-between;font-size:22px;margin-bottom:10px}
 .bar{height:20px;border-radius:10px;background:#1a1f38;overflow:hidden}
 .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--b));transition:width 1s}
-.bottom{left:0;right:0;bottom:0;height:60px;border-radius:0;border-width:2px 0 0;display:flex;align-items:center;overflow:hidden}
+.bottom{left:0;top:1020px;width:1920px;height:60px;border-radius:0;border-width:2px 0 0;display:flex;align-items:center;overflow:hidden}
 .bottom .tag{flex:none;padding:0 28px;height:100%;display:flex;align-items:center;font-weight:900;letter-spacing:3px;
   background:linear-gradient(90deg,var(--a),var(--b));color:#06080f}
 .bottom .tick{flex:1;padding:0 30px;font-size:26px;white-space:nowrap;transition:opacity .5s}
-.live{position:absolute;left:40px;top:40px;padding:8px 20px;border-radius:10px;background:#e11d48;font-weight:900;letter-spacing:3px;font-size:24px;display:flex;gap:12px;align-items:center}
+.live{position:absolute;left:40px;top:40px;padding:0 20px;justify-content:center;border-radius:10px;background:#e11d48;font-weight:900;letter-spacing:3px;font-size:24px;display:flex;gap:12px;align-items:center}
 .live i{width:14px;height:14px;border-radius:50%;background:#fff;animation:pulse 1.2s infinite}
 
 /* Alerts */
-.alert{position:absolute;left:50%;top:120px;transform:translate(-50%,-300px);padding:28px 56px;text-align:center;min-width:760px;
+.alert{position:absolute;left:560px;top:120px;width:800px;height:170px;display:flex;flex-direction:column;justify-content:center;transform:translateY(-500px);padding:0 40px;text-align:center;
   transition:transform .7s cubic-bezier(.2,1.2,.3,1)}
-.alert.show{transform:translate(-50%,0)}
+.alert.show{transform:none}
 .alert .k{font-size:24px;letter-spacing:6px;color:var(--a);text-transform:uppercase}
 .alert .w{font-size:64px;font-weight:900;margin-top:6px}
 .alert .m{font-size:28px;color:var(--muted);margin-top:6px}

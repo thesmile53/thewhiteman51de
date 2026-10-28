@@ -2,6 +2,7 @@
 <body>
 <div class="panel alert" id="a"><div class="k" id="k"></div><div class="w grad" id="w"></div><div class="m" id="m"></div></div>
 <script>
+Overlay.on("state",st=>Overlay.applyLayout(st.layout,{alert:a}));
 const queue=[];let busy=false;
 Overlay.on("alert",x=>{queue.push(x);run()});
 function run(){if(busy||!queue.length)return;busy=true;const x=queue.shift();

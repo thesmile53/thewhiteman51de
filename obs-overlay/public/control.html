@@ -16,12 +16,34 @@ button.g{background:#222844;color:var(--t)}button:active{transform:scale(.97)}
 .row{display:flex;gap:8px}.row>*{flex:1}
 .tog{display:flex;align-items:center;gap:10px;margin:8px 0}.tog input{width:auto}
 #st{position:fixed;right:16px;top:16px;font-size:13px;padding:6px 12px;border-radius:20px;background:#222844}
+
+.editor{grid-column:1/-1}
+#stage{position:relative;width:100%;aspect-ratio:16/9;background:#06080f;border:1px solid var(--line);border-radius:8px;overflow:hidden;touch-action:none;user-select:none}
+#inner{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;
+ background-image:linear-gradient(#ffffff10 1px,transparent 1px),linear-gradient(90deg,#ffffff10 1px,transparent 1px);background-size:60px 60px}
+.box{position:absolute;border:3px solid var(--a);background:rgba(0,229,255,.12);color:var(--t);font-size:24px;white-space:nowrap;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:move;border-radius:8px;overflow:hidden}
+.box.sel{border-color:#fff;background:rgba(168,85,247,.35);z-index:5}
+.box .rz{position:absolute;right:0;bottom:0;width:32px;height:32px;background:var(--b);cursor:nwse-resize;clip-path:polygon(100% 0,100% 100%,0 100%)}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.nums input{padding:6px}
 .url{display:flex;gap:6px;align-items:center;font-size:13px;margin:6px 0}.url code{flex:1;color:var(--m);overflow:hidden;text-overflow:ellipsis}
 .url button{margin:0;padding:5px 10px}
 </style></head><body>
 <div id="st">verbinde…</div>
 <h1>Overlay Control</h1><div style="color:var(--m);margin-bottom:16px">Änderungen erscheinen sofort in OBS.</div>
 <div class="wrap">
+
+<div class="card editor"><h2>Layout-Editor – Elemente selbst anordnen</h2>
+ <div style="color:var(--m);font-size:13px;margin-bottom:10px">Ziehen = verschieben · Ecke unten rechts = Größe ändern · Pfeiltasten = 1px (Shift = 10px). Änderungen sind sofort in OBS sichtbar.</div>
+ <div id="stage"><div id="inner"></div></div>
+ <div class="nums">
+  <div><label>Element</label><input id="lname" disabled></div>
+  <div><label>X</label><input id="lx" type="number"></div><div><label>Y</label><input id="ly" type="number"></div>
+  <div><label>Breite</label><input id="lw" type="number"></div><div><label>Höhe</label><input id="lh" type="number"></div>
+ </div>
+ <div class="tog"><input type="checkbox" id="snap" checked><span>Am Raster einrasten (10 px)</span></div>
+ <button class="g" onclick="if(confirm('Layout zurücksetzen?'))post('/api/reset-layout')">Layout zurücksetzen</button>
+</div>
 
 <div class="card"><h2>Allgemein</h2>
  <label>Passwort (falls gesetzt)</label><input id="pw" type="password" autocomplete="off">
@@ -92,13 +114,37 @@ const alertNow=()=>post("/api/alert",{kind:ak.value,who:aw.value,msg:am.value});
 const quick=k=>{ak.value=k;alertNow()};
 
 function fill(s){
-  S=s;
+  S=s;fillLayout(s.layout);
   const f=(el,v)=>{if(document.activeElement!==el)el.value=v};
   for(const k of ["name","topic","colorA","colorB","startingText","brbText","endingText","nextStream"])f($(k),s[k]);
   for(const k of ["lowerThirdVisible","chatVisible","goalVisible","tickerVisible"])$(k).checked=s[k];
   f(gl,s.goal.label);f(gc,s.goal.current);f(gt,s.goal.target);
   f(ticker,s.ticker.join("\n"));f(socials,s.socials.map(x=>x.label+" | "+x.value).join("\n"));
 }
+
+// ---- Layout-Editor
+const NAMES={cam:"Webcam",live:"LIVE-Badge",lower:"Lower Third",chat:"Chat",goal:"Ziel-Balken",bottom:"Ticker",alert:"Alert-Box"};
+const stage=$("stage"),inner=$("inner");let L={},sel=null,boxes={},k=1,drag=null,last=0;
+function fit(){k=stage.clientWidth/1920;inner.style.transform=`scale(${k})`}
+addEventListener("resize",fit);fit();
+for(const id in NAMES){const b=document.createElement("div");b.className="box";b.textContent=NAMES[id];
+ b.innerHTML+='<div class="rz"></div>';boxes[id]=b;inner.appendChild(b);
+ b.addEventListener("pointerdown",e=>{e.preventDefault();select(id);
+  drag={id,mode:e.target.classList.contains("rz")?"size":"move",sx:e.clientX,sy:e.clientY,o:{...L[id]}};b.setPointerCapture(e.pointerId)});
+ b.addEventListener("pointermove",e=>{if(!drag||drag.id!==id)return;
+  const dx=(e.clientX-drag.sx)/k,dy=(e.clientY-drag.sy)/k,o=drag.o,g=$("snap").checked?10:1,r=v=>Math.round(v/g)*g;
+  if(drag.mode=="move"){L[id].x=r(o.x+dx);L[id].y=r(o.y+dy)}else{L[id].w=Math.max(20,r(o.w+dx));L[id].h=Math.max(20,r(o.h+dy))}
+  draw();push(false)});
+ b.addEventListener("pointerup",()=>{if(drag){drag=null;push(true)}});}
+function select(id){sel=id;for(const i in boxes)boxes[i].classList.toggle("sel",i===id);nums()}
+function nums(){if(!sel)return;lname.value=NAMES[sel];for(const [i,f] of [["lx","x"],["ly","y"],["lw","w"],["lh","h"]])if(document.activeElement!==$(i))$(i).value=L[sel][f]}
+function draw(){for(const id in boxes){const l=L[id];if(!l)continue;const b=boxes[id].style;b.left=l.x+"px";b.top=l.y+"px";b.width=l.w+"px";b.height=l.h+"px"}nums()}
+function push(force){const t=Date.now();if(!force&&t-last<80)return;last=t;patch({layout:L})}
+for(const [i,f] of [["lx","x"],["ly","y"],["lw","w"],["lh","h"]])$(i).oninput=()=>{if(sel){L[sel][f]=+$(i).value;draw();push(true)}};
+addEventListener("keydown",e=>{if(!sel||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
+ const d=e.shiftKey?10:1,m={ArrowLeft:["x",-d],ArrowRight:["x",d],ArrowUp:["y",-d],ArrowDown:["y",d]}[e.key];
+ if(m){e.preventDefault();L[sel][m[0]]+=m[1];draw();push(true)}});
+function fillLayout(l){if(drag)return;L=JSON.parse(JSON.stringify(l));draw();if(!sel)select("cam")}
 const es=new EventSource("/events");
 es.addEventListener("state",e=>{fill(JSON.parse(e.data));st.textContent="verbunden";st.style.background="#14532d"});
 es.onerror=()=>{st.textContent="getrennt";st.style.background="#7f1d1d"};
