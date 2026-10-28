@@ -57,3 +57,12 @@ Kontrollpanel → Karte **Chat einblenden**: Twitch-Kanalname oder YouTube-Live-
 
 ## Live-Overlay bearbeiten
 Kontrollpanel → **Live-Overlay bearbeiten**: Webcam-Rahmen, LIVE-Badge, Lower Third, Chat, Ziel-Balken und Ticker lassen sich einzeln an- und ausschalten; LIVE-Text, Ticker-Label und Chat-Titel sind änderbar. Ausgeblendete Elemente erscheinen im Layout-Editor abgedunkelt.
+
+## OBS direkt steuern (Szenen wechseln, Webcam an/aus)
+Das Overlay selbst kann die echte Webcam nicht ausblenden – sie ist eine OBS-Quelle. Dafür gibt es im Panel die Karte **OBS-Steuerung** (nutzt das in OBS 28+ eingebaute WebSocket):
+
+1. OBS: *Werkzeuge → WebSocket-Servereinstellungen* → „WebSocket-Server aktivieren“, Passwort setzen.
+2. Panel: Host/Port (Standard `127.0.0.1:4455`) und Passwort eintragen → **Verbinden**.
+3. Szenen per Klick wechseln; Quellen der aktuellen Szene (Webcam, Mikrofon-Anzeige, …) per Haken ein-/ausschalten.
+
+Die Zugangsdaten stehen in `obs-config.json` (nur lokal, nicht im Repo) und werden nie an Browser gesendet. Läuft der Server nicht auf dem OBS-Rechner, Host entsprechend ändern.

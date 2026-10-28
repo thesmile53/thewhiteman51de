@@ -6,6 +6,7 @@ const path = require("path");
 
 const PORT = +process.env.PORT || 3000;
 const PASSWORD = process.env.CONTROL_PASSWORD || "";
+const OBS = require("./obs");
 const PUBLIC = path.join(__dirname, "public");
 const STATE_FILE = path.join(__dirname, "state.json");
 const UPLOADS = path.join(__dirname, "uploads");
@@ -176,6 +177,25 @@ const server = http.createServer(async (req, res) => {
         const fname = Date.now().toString(36) + Math.random().toString(36).slice(2, 8) + ext;
         fs.writeFileSync(path.join(UPLOADS, fname), buf);
         return json(res, 200, { url: "/uploads/" + fname });
+      }
+      case "/api/obs/connect": await OBS.connect(body); return json(res, 200, OBS.status());
+      case "/api/obs/disconnect": OBS.disconnect(); return json(res, 200, OBS.status());
+      case "/api/obs/status": return json(res, 200, OBS.status());
+      case "/api/obs/scenes": case "/api/obs/scene": case "/api/obs/items": case "/api/obs/item": {
+        try {
+          if (url.pathname === "/api/obs/scene") { await OBS.request("SetCurrentProgramScene", { sceneName: String(body.name) }); return json(res, 200, {}); }
+          if (url.pathname === "/api/obs/item") {
+            await OBS.request("SetSceneItemEnabled", { sceneName: String(body.sceneName), sceneItemId: Number(body.id), sceneItemEnabled: !!body.enabled });
+            return json(res, 200, {});
+          }
+          if (url.pathname === "/api/obs/scenes") {
+            const r = await OBS.request("GetSceneList");
+            return json(res, 200, { current: r.currentProgramSceneName, scenes: r.scenes.map(x => x.sceneName).reverse() });
+          }
+          const cur = (await OBS.request("GetCurrentProgramScene")).currentProgramSceneName;
+          const r = await OBS.request("GetSceneItemList", { sceneName: cur });
+          return json(res, 200, { scene: cur, items: r.sceneItems.map(i => ({ id: i.sceneItemId, name: i.sourceName, enabled: i.sceneItemEnabled })).reverse() });
+        } catch (e) { return json(res, 502, { error: e.message }); }
       }
       case "/api/scene": broadcast("scene", { name: String(body.name || "").slice(0, 30) }); return json(res, 200, {});
       case "/api/reset": state = JSON.parse(JSON.stringify(DEFAULT_STATE));

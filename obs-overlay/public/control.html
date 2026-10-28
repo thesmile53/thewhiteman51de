@@ -71,9 +71,19 @@ select{width:100%;background:#0b0d14;color:var(--t);border:1px solid var(--line)
  <div style="color:var(--m);font-size:13px;margin-top:8px">Position und Größe: im Layout-Editor die Box „Chat“ verschieben. Ein-/Ausblenden unter „Ein-/Ausblenden“.</div>
 </div>
 
+<div class="card"><h2>OBS-Steuerung</h2>
+ <div style="color:var(--m);font-size:13px;margin-bottom:6px">Szenen wechseln und Quellen (z. B. die echte <b>Webcam</b>) in OBS an-/ausschalten. In OBS: Werkzeuge → WebSocket-Servereinstellungen → Server aktivieren.</div>
+ <div class="row"><div><label>Host</label><input id="oh" value="127.0.0.1"></div><div><label>Port</label><input id="op" type="number" value="4455"></div></div>
+ <label>OBS-WebSocket-Passwort</label><input id="opw" type="password" autocomplete="off">
+ <button onclick="obsConnect()">Verbinden</button><button class="g" onclick="obsRefresh()">Aktualisieren</button><button class="g" onclick="obsDisc()">Trennen</button>
+ <div id="obsst" style="margin:8px 0;color:var(--m);font-size:13px">Nicht verbunden.</div>
+ <label>Szenen</label><div id="obsscenes"></div>
+ <label>Quellen der aktuellen Szene</label><div id="obsitems"></div>
+</div>
+
 <div class="card"><h2>Live-Overlay bearbeiten</h2>
  <div style="color:var(--m);font-size:13px">Elemente des Live-Overlays an-/ausschalten:</div>
- <div class="tog"><input type="checkbox" id="camVisible" onchange="tog(this)"><span>Webcam-Rahmen</span></div>
+ <div class="tog"><input type="checkbox" id="camVisible" onchange="tog(this)"><span>Webcam-<b>Rahmen</b> (nur die Umrandung – die Kamera selbst schaltest du unter „OBS-Steuerung“)</span></div>
  <div class="tog"><input type="checkbox" id="liveVisible" onchange="tog(this)"><span>LIVE-Badge</span></div>
  <div class="tog"><input type="checkbox" id="lowerThirdVisible" onchange="tog(this)"><span>Lower Third (Name &amp; Thema)</span></div>
  <div class="tog"><input type="checkbox" id="chatVisible" onchange="tog(this)"><span>Chat-Box</span></div>
@@ -226,6 +236,23 @@ function renderList(force){
   box.appendChild(d);
  }
 }
+
+// ---- OBS-Steuerung
+async function obsConnect(){obsst.textContent="verbinde…";await post("/api/obs/connect",{host:oh.value,port:+op.value,password:opw.value});obsRefresh()}
+async function obsDisc(){await post("/api/obs/disconnect");obsRefresh()}
+async function obsRefresh(){
+ const s=await (await post("/api/obs/status")).json();
+ if(!s.connected){obsst.textContent=s.configured?"Konfiguriert ("+s.host+"), aber nicht verbunden – OBS läuft? Passwort korrekt?":"Nicht verbunden.";obsscenes.innerHTML=obsitems.innerHTML="";return}
+ obsst.textContent="Verbunden mit "+s.host;
+ const sc=await (await post("/api/obs/scenes")).json(),it=await (await post("/api/obs/items")).json();
+ if(sc.error||it.error){obsst.textContent=sc.error||it.error;return}
+ obsscenes.innerHTML=sc.scenes.map(n=>`<button class="${n===sc.current?"":"g"}" data-n="${esc(n)}">${esc(n)}</button>`).join("");
+ obsscenes.querySelectorAll("button").forEach(b=>b.onclick=async()=>{await post("/api/obs/scene",{name:b.dataset.n});obsRefresh()});
+ obsitems.innerHTML=it.items.map(i=>`<div class="tog"><input type="checkbox" data-id="${i.id}" ${i.enabled?"checked":""}><span>${esc(i.name)}</span></div>`).join("")||"<i style='color:var(--m)'>keine Quellen</i>";
+ obsitems.querySelectorAll("input").forEach(c=>c.onchange=()=>post("/api/obs/item",{sceneName:it.scene,id:+c.dataset.id,enabled:c.checked}));
+}
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+setTimeout(obsRefresh,500);
 const es=new EventSource("/events");
 es.addEventListener("state",e=>{fill(JSON.parse(e.data));st.textContent="verbunden";st.style.background="#14532d"});
 es.onerror=()=>{st.textContent="getrennt";st.style.background="#7f1d1d"};
