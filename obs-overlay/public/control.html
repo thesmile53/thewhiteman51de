@@ -63,6 +63,14 @@ select{width:100%;background:#0b0d14;color:var(--t);border:1px solid var(--line)
  <button onclick="saveText()">Speichern</button><button class="g" onclick="if(confirm('Alles zurücksetzen?'))post('/api/reset')">Zurücksetzen</button>
 </div>
 
+<div class="card"><h2>Chat einblenden</h2>
+ <label>Twitch-Kanalname</label><div class="row"><input id="tw" placeholder="thewhiteman51de"><button class="g" style="flex:none;margin:0" onclick="setChat('https://www.twitch.tv/embed/'+encodeURIComponent(tw.value.trim())+'/chat?parent={host}&darkpopout')">Twitch-Chat</button></div>
+ <label>YouTube-Live-Video-ID</label><div class="row"><input id="yt" placeholder="z. B. dQw4w9WgXcQ"><button class="g" style="flex:none;margin:0" onclick="setChat('https://www.youtube.com/live_chat?v='+encodeURIComponent(yt.value.trim())+'&embed_domain={host}&dark_theme=1')">YouTube-Chat</button></div>
+ <label>oder eigene Chat-Adresse</label><input id="chatUrl" placeholder="https://…">
+ <button onclick="setChat(chatUrl.value)">Übernehmen</button><button class="g" onclick="setChat('')">Chat entfernen</button>
+ <div style="color:var(--m);font-size:13px;margin-top:8px">Position und Größe: im Layout-Editor die Box „Chat“ verschieben. Ein-/Ausblenden unter „Ein-/Ausblenden“.</div>
+</div>
+
 <div class="card"><h2>Ein-/Ausblenden</h2>
  <div class="tog"><input type="checkbox" id="lowerThirdVisible" onchange="tog(this)"><span>Lower Third</span></div>
  <div class="tog"><input type="checkbox" id="chatVisible" onchange="tog(this)"><span>Chat-Box</span></div>
@@ -115,6 +123,7 @@ const patch=o=>post("/api/state",o);
 const tog=el=>patch({[el.id]:el.checked});
 const saveText=()=>patch({name:$("name").value,topic:topic.value,colorA:colorA.value,colorB:colorB.value,
   startingText:startingText.value,brbText:brbText.value,endingText:endingText.value,nextStream:nextStream.value});
+const setChat=u=>patch({chatUrl:u});
 const saveGoal=()=>patch({goal:{label:gl.value,current:+gc.value,target:+gt.value}});
 const bump=d=>patch({goal:{...S.goal,current:Math.max(0,S.goal.current+d)}});
 const saveLists=()=>patch({
@@ -128,7 +137,7 @@ function fill(s){
   const f=(el,v)=>{if(document.activeElement!==el)el.value=v};
   for(const k of ["name","topic","colorA","colorB","startingText","brbText","endingText","nextStream"])f($(k),s[k]);
   for(const k of ["lowerThirdVisible","chatVisible","goalVisible","tickerVisible"])$(k).checked=s[k];
-  f(gl,s.goal.label);f(gc,s.goal.current);f(gt,s.goal.target);
+  f($("chatUrl"),s.chatUrl);f(gl,s.goal.label);f(gc,s.goal.current);f(gt,s.goal.target);
   f(ticker,s.ticker.join("\n"));f(socials,s.socials.map(x=>x.label+" | "+x.value).join("\n"));
 }
 

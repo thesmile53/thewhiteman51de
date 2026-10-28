@@ -22,6 +22,7 @@ const DEFAULT_LAYOUT = {
 };
 
 const DEFAULT_STATE = {
+  chatUrl: "", // Chat-Adresse für die Chat-Box ({host} = Hostname der Overlay-Seite)
   items: [], // selbst erstellte Quellen: text | image | embed | box
   layout: JSON.parse(JSON.stringify(DEFAULT_LAYOUT)),
   name: "TheWhiteMan51DE",
@@ -66,7 +67,9 @@ function merge(target, patch) {
   for (const k of Object.keys(DEFAULT_STATE)) {
     if (!(k in patch)) continue;
     const def = DEFAULT_STATE[k], v = patch[k];
-    if (k === "items") {
+    if (k === "chatUrl") {
+      target.chatUrl = cleanUrl(v);
+    } else if (k === "items") {
       if (Array.isArray(v)) target.items = v.slice(0, 50).map(cleanItem).filter(Boolean);
     } else if (k === "layout" && v && typeof v === "object") {
       for (const el of Object.keys(DEFAULT_LAYOUT)) {
