@@ -41,3 +41,13 @@ Die Seiten skalieren sich automatisch auf die Größe der Browser-Quelle (zentri
 
 ## Layout selbst anordnen
 Im Kontrollpanel (oben, **Layout-Editor**) kannst du Webcam, LIVE-Badge, Lower Third, Chat, Ziel-Balken, Ticker und Alert-Box per Maus verschieben und in der Größe ändern (Ecke unten rechts). Feintuning mit Pfeiltasten (Shift = 10 px) oder den Zahlenfeldern. Die Änderungen sind sofort in OBS sichtbar und werden gespeichert; „Layout zurücksetzen“ stellt die Standardpositionen wieder her.
+
+## Eigene Quellen erstellen
+Im Kontrollpanel unter **Quellen** kannst du eigene Elemente hinzufügen, die im Live-Overlay erscheinen:
+
+- **Text** – frei wählbarer Text mit Schriftgröße, Farbe, Ausrichtung
+- **Bild** – per URL oder direkt **hochladen** (PNG/JPG/GIF/WEBP, max. 8 MB, gespeichert in `uploads/`)
+- **Web-Seite** – beliebige https-Adresse als eingebettetes Fenster (z. B. Chat, Widgets)
+- **Fläche** – farbige Box (Hintergrund, Deckkraft, Rundung)
+
+Jede Quelle platzierst du im Layout-Editor (gelbe Boxen), kannst sie ein-/ausblenden, in der Reihenfolge nach vorne/hinten schieben oder löschen. Hinweis: Manche Seiten (z. B. twitch.tv) verbieten das Einbetten – dafür ist weiterhin eine eigene OBS-Browser-Quelle nötig.

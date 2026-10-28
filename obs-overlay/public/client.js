@@ -24,6 +24,37 @@
         el.style.right = el.style.bottom = "auto";
       }
     },
+    // Eigene Quellen in einen Container rendern (Elemente bleiben erhalten, damit iframes nicht neu laden).
+    renderItems(container, items) {
+      const keep = new Set();
+      items.forEach((it, idx) => {
+        keep.add(it.id);
+        let el = container.querySelector(`[data-id="${it.id}"]`);
+        if (!el || el.dataset.type !== it.type) {
+          el && el.remove();
+          el = document.createElement("div");
+          el.dataset.id = it.id; el.dataset.type = it.type; el.className = "item";
+          container.appendChild(el);
+        }
+        const st = el.style;
+        st.left = it.x + "px"; st.top = it.y + "px"; st.width = it.w + "px"; st.height = it.h + "px";
+        st.display = it.visible ? "" : "none"; st.zIndex = idx; st.borderRadius = it.radius + "px";
+        const hex = it.bg, a = it.alpha / 100;
+        st.background = hex ? `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})` : "transparent";
+        if (it.type === "text") {
+          st.color = it.color; st.fontSize = it.fontSize + "px"; st.textAlign = it.align;
+          st.justifyContent = { left: "flex-start", center: "center", right: "flex-end" }[it.align];
+          if (el.textContent !== it.text) el.textContent = it.text;
+        } else if (it.type === "image" || it.type === "embed") {
+          const tag = it.type === "image" ? "img" : "iframe";
+          let c = el.firstChild;
+          if (!c) { c = document.createElement(tag); if (tag === "iframe") c.setAttribute("frameborder", "0"); el.appendChild(c); }
+          if (it.url && c.getAttribute("src") !== it.url) c.setAttribute("src", it.url);
+          if (!it.url) c.removeAttribute("src");
+        }
+      });
+      container.querySelectorAll(".item").forEach(el => { if (!keep.has(el.dataset.id)) el.remove(); });
+    },
     socials: s => s.socials.map(x => `<div><b>${esc(x.label)}</b>${esc(x.value)}</div>`).join(""),
   };
   function esc(t) { return String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }

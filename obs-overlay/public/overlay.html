@@ -6,9 +6,11 @@
 <div class="panel chat" id="ch"><h4>Chat</h4>Chat-Browserquelle hier einblenden (Twitch/YouTube Chat-URL).</div>
 <div class="panel goal" id="go"><div class="l"><span id="gl"></span><span id="gv"></span></div><div class="bar"><i id="gb"></i></div></div>
 <div class="panel bottom" id="bt"><div class="tag">INFO</div><div class="tick" id="tk"></div></div>
+<div id="custom"></div>
 <script>
 let items=[],i=0;
 Overlay.on("state",st=>{
+ Overlay.renderItems(custom,st.items);
  Overlay.applyLayout(st.layout,{cam,live:lv,lower:lt,chat:ch,goal:go,bottom:bt});
  n.textContent=st.name;tp.textContent=st.topic;
  lt.classList.toggle("show",st.lowerThirdVisible);

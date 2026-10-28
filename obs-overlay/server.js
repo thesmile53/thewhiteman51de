@@ -8,6 +8,7 @@ const PORT = +process.env.PORT || 3000;
 const PASSWORD = process.env.CONTROL_PASSWORD || "";
 const PUBLIC = path.join(__dirname, "public");
 const STATE_FILE = path.join(__dirname, "state.json");
+const UPLOADS = path.join(__dirname, "uploads");
 
 // Positionen/Größen (px auf 1920x1080), im Web-Editor verschiebbar.
 const DEFAULT_LAYOUT = {
@@ -21,6 +22,7 @@ const DEFAULT_LAYOUT = {
 };
 
 const DEFAULT_STATE = {
+  items: [], // selbst erstellte Quellen: text | image | embed | box
   layout: JSON.parse(JSON.stringify(DEFAULT_LAYOUT)),
   name: "TheWhiteMan51DE",
   socials: [
@@ -64,7 +66,9 @@ function merge(target, patch) {
   for (const k of Object.keys(DEFAULT_STATE)) {
     if (!(k in patch)) continue;
     const def = DEFAULT_STATE[k], v = patch[k];
-    if (k === "layout" && v && typeof v === "object") {
+    if (k === "items") {
+      if (Array.isArray(v)) target.items = v.slice(0, 50).map(cleanItem).filter(Boolean);
+    } else if (k === "layout" && v && typeof v === "object") {
       for (const el of Object.keys(DEFAULT_LAYOUT)) {
         const n = v[el];
         if (!n || typeof n !== "object") continue;
@@ -88,12 +92,36 @@ function merge(target, patch) {
   }
 }
 
-const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon" };
+// ---- Eigene Quellen
+const ITEM_TYPES = ["text", "image", "embed", "box"];
+const cleanUrl = u => { u = String(u || "").trim().slice(0, 500); return /^(https?:\/\/|\/uploads\/)/i.test(u) ? u : ""; };
+const cleanColor = (c, d) => (/^#[0-9a-f]{6}$/i.test(String(c)) ? String(c) : d);
+const clamp = (v, lo, hi, d) => { v = Math.round(Number(v)); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+function cleanItem(i) {
+  if (!i || typeof i !== "object" || !/^[a-z0-9]{3,16}$/.test(String(i.id)) || !ITEM_TYPES.includes(i.type)) return null;
+  return {
+    id: String(i.id), type: i.type,
+    label: String(i.label || "").slice(0, 40),
+    visible: i.visible !== false,
+    x: clamp(i.x, -2000, 3840, 100), y: clamp(i.y, -2000, 2160, 100),
+    w: clamp(i.w, 20, 3840, 400), h: clamp(i.h, 20, 2160, 200),
+    text: String(i.text || "").slice(0, 500),
+    url: cleanUrl(i.url),
+    fontSize: clamp(i.fontSize, 8, 400, 48),
+    align: ["left", "center", "right"].includes(i.align) ? i.align : "center",
+    color: cleanColor(i.color, "#ffffff"),
+    bg: i.bg === "" ? "" : cleanColor(i.bg, ""),
+    alpha: clamp(i.alpha, 0, 100, 100),
+    radius: clamp(i.radius, 0, 500, 12),
+  };
+}
 
-function readBody(req) {
+const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp" };
+
+function readBody(req, limit = 1e6) {
   return new Promise((resolve, reject) => {
     let b = "";
-    req.on("data", c => { b += c; if (b.length > 1e5) { reject(new Error("too large")); req.destroy(); } });
+    req.on("data", c => { b += c; if (b.length > limit) { reject(new Error("too large")); req.destroy(); } });
     req.on("end", () => { try { resolve(b ? JSON.parse(b) : {}); } catch (e) { reject(e); } });
   });
 }
@@ -116,7 +144,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method !== "POST") return json(res, 405, { error: "method" });
     if (PASSWORD && req.headers["x-password"] !== PASSWORD) return json(res, 401, { error: "Falsches Passwort" });
     let body;
-    try { body = await readBody(req); } catch { return json(res, 400, { error: "bad json" }); }
+    try { body = await readBody(req, url.pathname === "/api/upload" ? 12e6 : 1e6); } catch { return json(res, 400, { error: "bad json" }); }
 
     switch (url.pathname) {
       case "/api/state": merge(state, body); pushState(); return json(res, 200, state);
@@ -131,6 +159,16 @@ const server = http.createServer(async (req, res) => {
       case "/api/countdown":
         state.countdownEnd = Date.now() + Math.max(0, Number(body.minutes) || 0) * 60000; pushState(); return json(res, 200, state);
       case "/api/brb-reset": state.brbSince = Date.now(); pushState(); return json(res, 200, state);
+      case "/api/upload": {
+        const ext = path.extname(String(body.name || "")).toLowerCase();
+        if (![".png", ".jpg", ".jpeg", ".gif", ".webp"].includes(ext)) return json(res, 400, { error: "Nur PNG, JPG, GIF, WEBP" });
+        const buf = Buffer.from(String(body.data || ""), "base64");
+        if (!buf.length || buf.length > 8 * 1024 * 1024) return json(res, 400, { error: "Datei leer oder größer als 8 MB" });
+        fs.mkdirSync(UPLOADS, { recursive: true });
+        const fname = Date.now().toString(36) + Math.random().toString(36).slice(2, 8) + ext;
+        fs.writeFileSync(path.join(UPLOADS, fname), buf);
+        return json(res, 200, { url: "/uploads/" + fname });
+      }
       case "/api/scene": broadcast("scene", { name: String(body.name || "").slice(0, 30) }); return json(res, 200, {});
       case "/api/reset": state = JSON.parse(JSON.stringify(DEFAULT_STATE));
         pushState(); return json(res, 200, state);
@@ -141,8 +179,10 @@ const server = http.createServer(async (req, res) => {
 
   // Statische Dateien
   let p = url.pathname === "/" ? "/control.html" : decodeURIComponent(url.pathname);
-  const file = path.normalize(path.join(PUBLIC, p));
-  if (!file.startsWith(PUBLIC + path.sep)) { res.writeHead(403); return res.end(); }
+  const root = p.startsWith("/uploads/") ? UPLOADS : PUBLIC;
+  if (root === UPLOADS) p = p.slice("/uploads".length);
+  const file = path.normalize(path.join(root, p));
+  if (!file.startsWith(root + path.sep)) { res.writeHead(403); return res.end(); }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404); return res.end("Nicht gefunden"); }
     res.writeHead(200, { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream", "Cache-Control": "no-cache" });

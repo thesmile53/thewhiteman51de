@@ -24,6 +24,10 @@ button.g{background:#222844;color:var(--t)}button:active{transform:scale(.97)}
 .box{position:absolute;border:3px solid var(--a);background:rgba(0,229,255,.12);color:var(--t);font-size:24px;white-space:nowrap;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:move;border-radius:8px;overflow:hidden}
 .box.sel{border-color:#fff;background:rgba(168,85,247,.35);z-index:5}
 .box .rz{position:absolute;right:0;bottom:0;width:32px;height:32px;background:var(--b);cursor:nwse-resize;clip-path:polygon(100% 0,100% 100%,0 100%)}
+.box.custom{border-color:#fbbf24;background:rgba(251,191,36,.12)}.box.custom.sel{border-color:#fff;background:rgba(251,191,36,.35)}
+.box .lb{pointer-events:none}
+.item-card{border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px;background:#0f1322}
+select{width:100%;background:#0b0d14;color:var(--t);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}
 .nums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .nums input{padding:6px}
 .url{display:flex;gap:6px;align-items:center;font-size:13px;margin:6px 0}.url code{flex:1;color:var(--m);overflow:hidden;text-overflow:ellipsis}
@@ -43,6 +47,12 @@ button.g{background:#222844;color:var(--t)}button:active{transform:scale(.97)}
  </div>
  <div class="tog"><input type="checkbox" id="snap" checked><span>Am Raster einrasten (10 px)</span></div>
  <button class="g" onclick="if(confirm('Layout zurücksetzen?'))post('/api/reset-layout')">Layout zurücksetzen</button>
+</div>
+
+<div class="card editor"><h2>Quellen – eigene Elemente erstellen</h2>
+ <div style="color:var(--m);font-size:13px">Füge Texte, Bilder, Web-Seiten (z. B. Chat oder Widgets) oder Farbflächen hinzu. Sie erscheinen gelb im Editor und im Live-Overlay.</div>
+ <div style="margin:8px 0"><button onclick="addItem('text')">+ Text</button><button onclick="addItem('image')">+ Bild</button><button onclick="addItem('embed')">+ Web-Seite</button><button onclick="addItem('box')">+ Fläche</button></div>
+ <div id="itemlist"></div>
 </div>
 
 <div class="card"><h2>Allgemein</h2>
@@ -114,7 +124,7 @@ const alertNow=()=>post("/api/alert",{kind:ak.value,who:aw.value,msg:am.value});
 const quick=k=>{ak.value=k;alertNow()};
 
 function fill(s){
-  S=s;fillLayout(s.layout);
+  S=s;fillLayout(s.layout,s.items);
   const f=(el,v)=>{if(document.activeElement!==el)el.value=v};
   for(const k of ["name","topic","colorA","colorB","startingText","brbText","endingText","nextStream"])f($(k),s[k]);
   for(const k of ["lowerThirdVisible","chatVisible","goalVisible","tickerVisible"])$(k).checked=s[k];
@@ -122,29 +132,84 @@ function fill(s){
   f(ticker,s.ticker.join("\n"));f(socials,s.socials.map(x=>x.label+" | "+x.value).join("\n"));
 }
 
-// ---- Layout-Editor
+// ---- Layout-Editor (feste Elemente + eigene Quellen)
 const NAMES={cam:"Webcam",live:"LIVE-Badge",lower:"Lower Third",chat:"Chat",goal:"Ziel-Balken",bottom:"Ticker",alert:"Alert-Box"};
-const stage=$("stage"),inner=$("inner");let L={},sel=null,boxes={},k=1,drag=null,last=0;
+const stage=$("stage"),inner=$("inner");let L={},ITEMS=[],sel=null,boxes={},k=1,drag=null,last=0;
 function fit(){k=stage.clientWidth/1920;inner.style.transform=`scale(${k})`}
 addEventListener("resize",fit);fit();
-for(const id in NAMES){const b=document.createElement("div");b.className="box";b.textContent=NAMES[id];
- b.innerHTML+='<div class="rz"></div>';boxes[id]=b;inner.appendChild(b);
+const geo=id=>id.startsWith("i:")?ITEMS.find(i=>i.id===id.slice(2)):L[id];
+const title=id=>id.startsWith("i:")?(geo(id)?.label||TYPE_NAMES[geo(id)?.type]||"Quelle"):NAMES[id];
+function mkBox(id){
+ const b=document.createElement("div");b.className="box"+(id.startsWith("i:")?" custom":"");
+ b.innerHTML='<span class="lb"></span><div class="rz"></div>';boxes[id]=b;inner.appendChild(b);
  b.addEventListener("pointerdown",e=>{e.preventDefault();select(id);
-  drag={id,mode:e.target.classList.contains("rz")?"size":"move",sx:e.clientX,sy:e.clientY,o:{...L[id]}};b.setPointerCapture(e.pointerId)});
+  drag={id,mode:e.target.classList.contains("rz")?"size":"move",sx:e.clientX,sy:e.clientY,o:{...geo(id)}};b.setPointerCapture(e.pointerId)});
  b.addEventListener("pointermove",e=>{if(!drag||drag.id!==id)return;
-  const dx=(e.clientX-drag.sx)/k,dy=(e.clientY-drag.sy)/k,o=drag.o,g=$("snap").checked?10:1,r=v=>Math.round(v/g)*g;
-  if(drag.mode=="move"){L[id].x=r(o.x+dx);L[id].y=r(o.y+dy)}else{L[id].w=Math.max(20,r(o.w+dx));L[id].h=Math.max(20,r(o.h+dy))}
+  const dx=(e.clientX-drag.sx)/k,dy=(e.clientY-drag.sy)/k,o=drag.o,g=$("snap").checked?10:1,r=v=>Math.round(v/g)*g,t=geo(id);
+  if(drag.mode=="move"){t.x=r(o.x+dx);t.y=r(o.y+dy)}else{t.w=Math.max(20,r(o.w+dx));t.h=Math.max(20,r(o.h+dy))}
   draw();push(false)});
- b.addEventListener("pointerup",()=>{if(drag){drag=null;push(true)}});}
+ b.addEventListener("pointerup",()=>{if(drag){drag=null;push(true)}});
+}
+for(const id in NAMES)mkBox(id);
 function select(id){sel=id;for(const i in boxes)boxes[i].classList.toggle("sel",i===id);nums()}
-function nums(){if(!sel)return;lname.value=NAMES[sel];for(const [i,f] of [["lx","x"],["ly","y"],["lw","w"],["lh","h"]])if(document.activeElement!==$(i))$(i).value=L[sel][f]}
-function draw(){for(const id in boxes){const l=L[id];if(!l)continue;const b=boxes[id].style;b.left=l.x+"px";b.top=l.y+"px";b.width=l.w+"px";b.height=l.h+"px"}nums()}
-function push(force){const t=Date.now();if(!force&&t-last<80)return;last=t;patch({layout:L})}
-for(const [i,f] of [["lx","x"],["ly","y"],["lw","w"],["lh","h"]])$(i).oninput=()=>{if(sel){L[sel][f]=+$(i).value;draw();push(true)}};
-addEventListener("keydown",e=>{if(!sel||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
+function nums(){if(!sel||!geo(sel))return;lname.value=title(sel);for(const [i,f] of [["lx","x"],["ly","y"],["lw","w"],["lh","h"]])if(document.activeElement!==$(i))$(i).value=geo(sel)[f]}
+function draw(){for(const id in boxes){const l=geo(id);if(!l)continue;const b=boxes[id].style;b.left=l.x+"px";b.top=l.y+"px";b.width=l.w+"px";b.height=l.h+"px";
+ boxes[id].firstChild.textContent=title(id);b.opacity=l.visible===false?.35:1}nums()}
+function push(force){const t=Date.now();if(!force&&t-last<80)return;last=t;patch({layout:L,items:ITEMS})}
+for(const [i,f] of [["lx","x"],["ly","y"],["lw","w"],["lh","h"]])$(i).oninput=()=>{if(sel&&geo(sel)){geo(sel)[f]=+$(i).value;draw();push(true)}};
+addEventListener("keydown",e=>{if(!sel||!geo(sel)||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
  const d=e.shiftKey?10:1,m={ArrowLeft:["x",-d],ArrowRight:["x",d],ArrowUp:["y",-d],ArrowDown:["y",d]}[e.key];
- if(m){e.preventDefault();L[sel][m[0]]+=m[1];draw();push(true)}});
-function fillLayout(l){if(drag)return;L=JSON.parse(JSON.stringify(l));draw();if(!sel)select("cam")}
+ if(m){e.preventDefault();geo(sel)[m[0]]+=m[1];draw();push(true)}});
+function fillLayout(l,items){if(drag)return;L=JSON.parse(JSON.stringify(l));ITEMS=JSON.parse(JSON.stringify(items));
+ for(const id in boxes)if(id.startsWith("i:")&&!geo(id)){boxes[id].remove();delete boxes[id];if(sel===id)sel="cam"}
+ for(const it of ITEMS)if(!boxes["i:"+it.id])mkBox("i:"+it.id);
+ draw();if(!sel)select("cam");renderList()}
+
+// ---- Eigene Quellen
+const TYPE_NAMES={text:"Text",image:"Bild",embed:"Web-Seite",box:"Fläche"};
+function addItem(type){
+ const id="i"+Math.random().toString(36).slice(2,9);
+ const d={id,type,label:TYPE_NAMES[type]+" "+(ITEMS.length+1),visible:true,x:760,y:440,w:400,h:200,text:"Dein Text",url:"",fontSize:48,align:"center",color:"#ffffff",bg:type=="box"?"#a855f7":"",alpha:100,radius:12};
+ if(type=="image"){d.w=300;d.h=300}if(type=="embed"){d.w=640;d.h=360}
+ ITEMS.push(d);mkBox("i:"+id);draw();select("i:"+id);push(true);
+}
+function delItem(id){if(!confirm("Quelle löschen?"))return;ITEMS=ITEMS.filter(i=>i.id!==id);boxes["i:"+id]?.remove();delete boxes["i:"+id];sel="cam";draw();select("cam");push(true)}
+function move(id,d){const i=ITEMS.findIndex(x=>x.id===id),j=i+d;if(j<0||j>=ITEMS.length)return;[ITEMS[i],ITEMS[j]]=[ITEMS[j],ITEMS[i]];push(true);renderList(true)}
+function setItem(id,f,v){const it=ITEMS.find(i=>i.id===id);if(!it)return;it[f]=v;draw();push(true)}
+async function upload(id,input){
+ const f=input.files[0];if(!f)return;
+ const data=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(",")[1]);fr.readAsDataURL(f)});
+ const r=await post("/api/upload",{name:f.name,data});const j=await r.json();
+ if(!r.ok){alert(j.error||"Upload fehlgeschlagen");return}
+ setItem(id,"url",j.url);renderList(true);
+}
+function renderList(force){
+ const box=$("itemlist");
+ if(!force&&box.contains(document.activeElement))return;
+ box.innerHTML=ITEMS.length?"":'<div style="color:var(--m)">Noch keine Quellen. Füge oben eine hinzu – sie erscheint im Editor und im Overlay.</div>';
+ for(const it of ITEMS){
+  const d=document.createElement("div");d.className="item-card";
+  const id=it.id,E=v=>String(v).replace(/"/g,"&quot;").replace(/</g,"&lt;");
+  let f='';
+  if(it.type=="text")f=`<label>Text</label><textarea oninput="setItem('${id}','text',this.value)">${E(it.text)}</textarea>
+   <div class="row"><div><label>Schriftgröße</label><input type="number" value="${it.fontSize}" oninput="setItem('${id}','fontSize',+this.value)"></div>
+   <div><label>Farbe</label><input type="color" value="${it.color}" oninput="setItem('${id}','color',this.value)"></div>
+   <div><label>Ausrichtung</label><select onchange="setItem('${id}','align',this.value)">${["left","center","right"].map(a=>`<option ${a==it.align?"selected":""} value="${a}">${{left:"links",center:"mitte",right:"rechts"}[a]}</option>`)}</select></div></div>`;
+  if(it.type=="image")f=`<label>Bild-URL oder hochladen</label><input value="${E(it.url)}" placeholder="https://…" onchange="setItem('${id}','url',this.value)">
+   <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" onchange="upload('${id}',this)" style="margin-top:6px">`;
+  if(it.type=="embed")f=`<label>Web-Adresse (https://…) – z. B. Chat, Alertbox, Widgets</label><input value="${E(it.url)}" placeholder="https://…" onchange="setItem('${id}','url',this.value)">`;
+  const bgOn=!!it.bg;
+  d.innerHTML=`<div class="row" style="align-items:end"><div style="flex:2"><label>${TYPE_NAMES[it.type]} – Name</label><input value="${E(it.label)}" oninput="setItem('${id}','label',this.value)"></div>
+   <div style="flex:none"><button class="g" onclick="select('i:${id}')">Auswählen</button></div></div>${f}
+   <div class="row"><div><label>Hintergrund</label><div class="row"><input type="color" value="${bgOn?it.bg:'#000000'}" oninput="setItem('${id}','bg',this.value)"><button class="g" style="margin:0" onclick="setItem('${id}','bg','');renderList(true)">keiner</button></div></div>
+   <div><label>Deckkraft %</label><input type="number" min="0" max="100" value="${it.alpha}" oninput="setItem('${id}','alpha',+this.value)"></div>
+   <div><label>Rundung</label><input type="number" min="0" value="${it.radius}" oninput="setItem('${id}','radius',+this.value)"></div></div>
+   <div class="tog"><input type="checkbox" ${it.visible?"checked":""} onchange="setItem('${id}','visible',this.checked)"><span>Sichtbar</span>
+   <button class="g" style="margin:0 0 0 auto" onclick="move('${id}',-1)">↓ nach hinten</button><button class="g" style="margin:0" onclick="move('${id}',1)">↑ nach vorne</button>
+   <button class="g" style="margin:0;background:#7f1d1d" onclick="delItem('${id}')">Löschen</button></div>`;
+  box.appendChild(d);
+ }
+}
 const es=new EventSource("/events");
 es.addEventListener("state",e=>{fill(JSON.parse(e.data));st.textContent="verbunden";st.style.background="#14532d"});
 es.onerror=()=>{st.textContent="getrennt";st.style.background="#7f1d1d"};
