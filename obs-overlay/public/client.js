@@ -62,6 +62,8 @@
   const es = new EventSource("/events");
   es.addEventListener("state", e => {
     const s = JSON.parse(e.data);
+    if (window.__ver && s.ver && window.__ver !== s.ver) return location.reload();
+    window.__ver = s.ver;
     offset = s.now - Date.now();
     document.documentElement.style.setProperty("--a", s.colorA);
     document.documentElement.style.setProperty("--b", s.colorB);

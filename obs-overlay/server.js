@@ -61,12 +61,13 @@ try {
 } catch {}
 const save = () => fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2), () => {});
 
+const VER = String(Date.now()); // ändert sich bei Serverneustart → Seiten laden sich neu
 const clients = new Set();
 const broadcast = (event, data) => {
   const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
   for (const res of clients) res.write(msg);
 };
-const pushState = () => { save(); broadcast("state", { ...state, now: Date.now() }); };
+const pushState = () => { save(); broadcast("state", { ...state, now: Date.now(), ver: VER }); };
 
 // Nur bekannte Schlüssel mit passendem Typ übernehmen.
 function merge(target, patch) {
@@ -141,7 +142,7 @@ const server = http.createServer(async (req, res) => {
 
   if (url.pathname === "/events") {
     res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
-    res.write(`event: state\ndata: ${JSON.stringify({ ...state, now: Date.now() })}\n\n`);
+    res.write(`event: state\ndata: ${JSON.stringify({ ...state, now: Date.now(), ver: VER })}\n\n`);
     clients.add(res);
     const ping = setInterval(() => res.write(": ping\n\n"), 25000);
     req.on("close", () => { clearInterval(ping); clients.delete(res); });
@@ -149,7 +150,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname.startsWith("/api/")) {
-    if (req.method === "GET" && url.pathname === "/api/state") return json(res, 200, { ...state, now: Date.now() });
+    if (req.method === "GET" && url.pathname === "/api/state") return json(res, 200, { ...state, now: Date.now(), ver: VER });
     if (req.method !== "POST") return json(res, 405, { error: "method" });
     if (PASSWORD && req.headers["x-password"] !== PASSWORD) return json(res, 401, { error: "Falsches Passwort" });
     let body;

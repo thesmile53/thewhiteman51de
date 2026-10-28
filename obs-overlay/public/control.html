@@ -256,7 +256,7 @@ async function obsRefresh(){
 function esc(t){return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 setTimeout(obsRefresh,500);
 const es=new EventSource("/events");
-es.addEventListener("state",e=>{fill(JSON.parse(e.data));st.textContent="verbunden";st.style.background="#14532d"});
+es.addEventListener("state",e=>{const d=JSON.parse(e.data);if(window.__ver&&d.ver&&window.__ver!==d.ver)return location.reload();window.__ver=d.ver;fill(d);st.textContent="verbunden";st.style.background="#14532d"});
 es.onerror=()=>{st.textContent="getrennt";st.style.background="#7f1d1d"};
 
 const pages=[["Starting","starting"],["Live-Overlay","overlay"],["Alerts","alerts"],["BRB","brb"],["Ending","ending"]];
