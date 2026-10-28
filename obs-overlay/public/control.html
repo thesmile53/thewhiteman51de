@@ -1,0 +1,110 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Overlay Control</title>
+<style>
+:root{--bg:#0b0d14;--card:#141829;--line:#2a3050;--a:#00e5ff;--b:#a855f7;--t:#f4f6ff;--m:#9aa3c7}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:16px system-ui,sans-serif;padding:16px}
+h1{margin:0 0 4px;background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.wrap{max-width:1100px;margin:auto;display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h2{margin:0 0 12px;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--a)}
+label{display:block;font-size:13px;color:var(--m);margin:10px 0 4px}
+input,textarea{width:100%;background:#0b0d14;color:var(--t);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}
+textarea{min-height:90px;resize:vertical}
+input[type=color]{height:40px;padding:3px}
+button{background:linear-gradient(90deg,var(--a),var(--b));color:#06080f;font-weight:700;border:0;border-radius:8px;padding:9px 14px;cursor:pointer;margin:6px 6px 0 0}
+button.g{background:#222844;color:var(--t)}button:active{transform:scale(.97)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.tog{display:flex;align-items:center;gap:10px;margin:8px 0}.tog input{width:auto}
+#st{position:fixed;right:16px;top:16px;font-size:13px;padding:6px 12px;border-radius:20px;background:#222844}
+.url{display:flex;gap:6px;align-items:center;font-size:13px;margin:6px 0}.url code{flex:1;color:var(--m);overflow:hidden;text-overflow:ellipsis}
+.url button{margin:0;padding:5px 10px}
+</style></head><body>
+<div id="st">verbinde…</div>
+<h1>Overlay Control</h1><div style="color:var(--m);margin-bottom:16px">Änderungen erscheinen sofort in OBS.</div>
+<div class="wrap">
+
+<div class="card"><h2>Allgemein</h2>
+ <label>Passwort (falls gesetzt)</label><input id="pw" type="password" autocomplete="off">
+ <label>Kanalname</label><input id="name">
+ <label>Thema (Lower Third)</label><input id="topic">
+ <div class="row"><div><label>Farbe A</label><input id="colorA" type="color"></div><div><label>Farbe B</label><input id="colorB" type="color"></div></div>
+ <button onclick="saveText()">Speichern</button><button class="g" onclick="if(confirm('Alles zurücksetzen?'))post('/api/reset')">Zurücksetzen</button>
+</div>
+
+<div class="card"><h2>Ein-/Ausblenden</h2>
+ <div class="tog"><input type="checkbox" id="lowerThirdVisible" onchange="tog(this)"><span>Lower Third</span></div>
+ <div class="tog"><input type="checkbox" id="chatVisible" onchange="tog(this)"><span>Chat-Box</span></div>
+ <div class="tog"><input type="checkbox" id="goalVisible" onchange="tog(this)"><span>Ziel-Balken</span></div>
+ <div class="tog"><input type="checkbox" id="tickerVisible" onchange="tog(this)"><span>Ticker</span></div>
+</div>
+
+<div class="card"><h2>Alerts</h2>
+ <div class="row"><div><label>Art</label><input id="ak" value="Neuer Follower"></div><div><label>Name</label><input id="aw" value="Testuser"></div></div>
+ <label>Nachricht</label><input id="am" value="Willkommen im Team!">
+ <button onclick="alertNow()">Alert senden</button>
+ <div><button class="g" onclick="quick('Neuer Follower')">Follower</button><button class="g" onclick="quick('Neues Abo')">Abo</button><button class="g" onclick="quick('Spende')">Spende</button><button class="g" onclick="quick('Raid')">Raid</button></div>
+</div>
+
+<div class="card"><h2>Follower-Ziel</h2>
+ <label>Titel</label><input id="gl">
+ <div class="row"><div><label>Aktuell</label><input id="gc" type="number"></div><div><label>Ziel</label><input id="gt" type="number"></div></div>
+ <button onclick="saveGoal()">Speichern</button><button class="g" onclick="bump(1)">+1</button><button class="g" onclick="bump(-1)">−1</button><button class="g" onclick="bump(10)">+10</button>
+</div>
+
+<div class="card"><h2>Starting / BRB / Ending</h2>
+ <label>Starting-Text</label><input id="startingText">
+ <label>BRB-Text</label><input id="brbText">
+ <label>Ending-Text</label><input id="endingText">
+ <label>Nächster Stream</label><input id="nextStream">
+ <div class="row"><div><label>Countdown (Minuten)</label><input id="cm" type="number" value="5" min="0"></div></div>
+ <button onclick="saveText()">Texte speichern</button><button onclick="post('/api/countdown',{minutes:+cm.value})">Countdown starten</button><button class="g" onclick="post('/api/brb-reset')">BRB-Zähler neu</button>
+</div>
+
+<div class="card"><h2>Ticker &amp; Socials</h2>
+ <label>Ticker (eine Zeile pro Eintrag)</label><textarea id="ticker"></textarea>
+ <label>Socials (Format: Label | Wert)</label><textarea id="socials"></textarea>
+ <button onclick="saveLists()">Speichern</button>
+</div>
+
+<div class="card"><h2>OBS-Quellen (1920×1080)</h2><div id="urls"></div></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let S={};
+pw.value=localStorage.pw||"";pw.oninput=()=>localStorage.pw=pw.value;
+
+async function post(url,body={}){
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","x-password":pw.value},body:JSON.stringify(body)});
+  if(r.status==401){st.textContent="Falsches Passwort";st.style.background="#7f1d1d"}
+  return r;
+}
+const patch=o=>post("/api/state",o);
+const tog=el=>patch({[el.id]:el.checked});
+const saveText=()=>patch({name:name.value,topic:topic.value,colorA:colorA.value,colorB:colorB.value,
+  startingText:startingText.value,brbText:brbText.value,endingText:endingText.value,nextStream:nextStream.value});
+const saveGoal=()=>patch({goal:{label:gl.value,current:+gc.value,target:+gt.value}});
+const bump=d=>patch({goal:{...S.goal,current:Math.max(0,S.goal.current+d)}});
+const saveLists=()=>patch({
+  ticker:ticker.value.split("\n").map(s=>s.trim()).filter(Boolean),
+  socials:socials.value.split("\n").map(l=>l.split("|").map(s=>s.trim())).filter(p=>p[0]).map(p=>({label:p[0],value:p[1]||""}))});
+const alertNow=()=>post("/api/alert",{kind:ak.value,who:aw.value,msg:am.value});
+const quick=k=>{ak.value=k;alertNow()};
+
+function fill(s){
+  S=s;
+  const f=(el,v)=>{if(document.activeElement!==el)el.value=v};
+  for(const k of ["name","topic","colorA","colorB","startingText","brbText","endingText","nextStream"])f($(k),s[k]);
+  for(const k of ["lowerThirdVisible","chatVisible","goalVisible","tickerVisible"])$(k).checked=s[k];
+  f(gl,s.goal.label);f(gc,s.goal.current);f(gt,s.goal.target);
+  f(ticker,s.ticker.join("\n"));f(socials,s.socials.map(x=>x.label+" | "+x.value).join("\n"));
+}
+const es=new EventSource("/events");
+es.addEventListener("state",e=>{fill(JSON.parse(e.data));st.textContent="verbunden";st.style.background="#14532d"});
+es.onerror=()=>{st.textContent="getrennt";st.style.background="#7f1d1d"};
+
+const pages=[["Starting","starting"],["Live-Overlay","overlay"],["Alerts","alerts"],["BRB","brb"],["Ending","ending"]];
+urls.innerHTML=pages.map(([l,p])=>`<div class="url"><b style="width:90px">${l}</b><code>${location.origin}/${p}.html</code>
+ <button class="g" onclick="navigator.clipboard.writeText('${location.origin}/${p}.html')">Kopieren</button>
+ <button class="g" onclick="window.open('/${p}.html','_blank')">Vorschau</button></div>`).join("");
+</script></body></html>

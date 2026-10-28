@@ -1,0 +1,11 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"><script src="client.js"></script><title>Ending</title></head>
+<body class="solid"><div class="grid"></div>
+<div class="center">
+  <div class="brand grad" id="n"></div>
+  <div class="big" id="t"></div>
+  <div class="sub" id="x"></div>
+</div>
+<div class="socials" id="s"></div>
+<script>
+Overlay.on("state",st=>{n.textContent=st.name;t.textContent=st.endingText;x.textContent=st.nextStream;s.innerHTML=Overlay.socials(st)});
+</script></body></html>

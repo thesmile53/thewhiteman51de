@@ -1,0 +1,13 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"><script src="client.js"></script><title>Starting</title></head>
+<body class="solid"><div class="grid"></div>
+<div class="center">
+  <div class="brand grad" id="n"></div>
+  <div class="sub pulse"><span id="t"></span><span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
+  <div class="big" id="c">--:--</div>
+</div>
+<div class="socials" id="s"></div>
+<script>
+let end=0;
+Overlay.on("state",st=>{n.textContent=st.name;t.textContent=st.startingText;s.innerHTML=Overlay.socials(st);end=st.countdownEnd});
+setInterval(()=>{c.textContent=Overlay.fmt(Math.max(0,Math.round((end-Overlay.now())/1000)))},250);
+</script></body></html>

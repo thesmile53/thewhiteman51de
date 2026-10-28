@@ -1,0 +1,23 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"><script src="client.js"></script><title>Live Overlay</title></head>
+<body>
+<div class="frame cam"></div>
+<div class="live"><i></i>LIVE</div>
+<div class="panel lower" id="lt"><div class="n grad" id="n"></div><div class="t" id="tp"></div></div>
+<div class="panel chat" id="ch"><h4>Chat</h4>Chat-Browserquelle hier einblenden (Twitch/YouTube Chat-URL).</div>
+<div class="panel goal" id="go"><div class="l"><span id="gl"></span><span id="gv"></span></div><div class="bar"><i id="gb"></i></div></div>
+<div class="panel bottom" id="bt"><div class="tag">INFO</div><div class="tick" id="tk"></div></div>
+<script>
+let items=[],i=0;
+Overlay.on("state",st=>{
+ n.textContent=st.name;tp.textContent=st.topic;
+ lt.classList.toggle("show",st.lowerThirdVisible);
+ ch.style.display=st.chatVisible?"":"none";
+ go.style.display=st.goalVisible?"":"none";
+ bt.style.display=st.tickerVisible?"":"none";
+ gl.textContent=st.goal.label;gv.textContent=st.goal.current+" / "+st.goal.target;
+ gb.style.width=Math.min(100,st.goal.current/st.goal.target*100)+"%";
+ items=[...st.ticker,...st.socials.map(x=>x.label+": "+x.value)];
+});
+function nxt(){if(!items.length)return;tk.style.opacity=0;setTimeout(()=>{tk.textContent=items[i++%items.length];tk.style.opacity=1},500)}
+setTimeout(nxt,600);setInterval(nxt,6000);
+</script></body></html>

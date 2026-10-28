@@ -1,0 +1,13 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"><script src="client.js"></script><title>BRB</title></head>
+<body class="solid"><div class="grid"></div>
+<div class="center">
+  <div class="brand grad" id="n"></div>
+  <div class="big pulse" id="t"></div>
+  <div class="sub">Pause seit <span id="c">00:00</span></div>
+</div>
+<div class="socials" id="s"></div>
+<script>
+let since=Date.now();
+Overlay.on("state",st=>{n.textContent=st.name;t.textContent=st.brbText;s.innerHTML=Overlay.socials(st);since=st.brbSince||Overlay.now()});
+setInterval(()=>{c.textContent=Overlay.fmt(Math.max(0,((Overlay.now()-since)/1000)|0))},500);
+</script></body></html>

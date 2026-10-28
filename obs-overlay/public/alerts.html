@@ -1,0 +1,10 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"><script src="client.js"></script><title>Alerts</title></head>
+<body>
+<div class="panel alert" id="a"><div class="k" id="k"></div><div class="w grad" id="w"></div><div class="m" id="m"></div></div>
+<script>
+const queue=[];let busy=false;
+Overlay.on("alert",x=>{queue.push(x);run()});
+function run(){if(busy||!queue.length)return;busy=true;const x=queue.shift();
+ k.textContent=x.kind;w.textContent=x.who;m.textContent=x.msg;a.classList.add("show");
+ setTimeout(()=>{a.classList.remove("show");setTimeout(()=>{busy=false;run()},800)},5000)}
+</script></body></html>
