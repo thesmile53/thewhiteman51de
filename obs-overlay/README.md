@@ -35,3 +35,6 @@ curl -X POST localhost:3000/api/countdown -d '{"minutes":10}'
 ```
 
 Hinweis: Das Panel ist nur im lokalen Netz gedacht. Bei Zugriff aus dem Internet immer `CONTROL_PASSWORD` setzen und HTTPS vorschalten.
+
+## Größe / Skalierung
+Die Seiten skalieren sich automatisch auf die Größe der Browser-Quelle (zentriert, ohne Verzerrung). Am besten stellst du die Quelle auf die **Canvas-Größe** deiner OBS-Szene (Einstellungen → Video → Basisauflösung) und ziehst sie auf Vollbild (Strg+F). Bei 16:9 füllt das Overlay dann alles aus. Die Positionen für Webcam/Chat oben gelten für 1920×1080 und müssen bei anderer Auflösung proportional umgerechnet werden.

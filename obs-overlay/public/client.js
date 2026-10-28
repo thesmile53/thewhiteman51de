@@ -1,5 +1,14 @@
 // Gemeinsamer Client: verbindet per SSE mit dem Server und liefert State/Alerts.
 (function () {
+  // Skaliert die 1920x1080-Fläche auf jede Quellen-/Fenstergröße (zentriert, ohne Verzerrung).
+  function fit() {
+    const k = Math.min(innerWidth / 1920, innerHeight / 1080);
+    const b = document.body;
+    b.style.transform = `translate(${(innerWidth - 1920 * k) / 2}px,${(innerHeight - 1080 * k) / 2}px) scale(${k})`;
+  }
+  addEventListener("resize", fit);
+  addEventListener("DOMContentLoaded", fit);
+
   let offset = 0;
   const handlers = { state: [], alert: [], scene: [] };
   window.Overlay = {
